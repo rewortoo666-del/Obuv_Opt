@@ -316,10 +316,6 @@
 
         // ==========================================
         // КОНФИГ API — АДРЕС БОТА (см. PUBLIC_API_BASE_URL в bot.py)
-        // Впиши сюда публичный https-адрес твоего сервера бота, например:
-        // 'https://api.rg-obuv.ru'  или  'https://твой-туннель.trycloudflare.com'
-        // Если оставить пустой строкой — витрина будет работать только на
-        // захардкоженных FALLBACK_PRODUCTS ниже (то, что было раньше).
         // ==========================================
         const API_BASE_URL = 'https://federal-hardening-sappy.ngrok-free.dev'
         const PRODUCTS_ENDPOINT = API_BASE_URL ? `${API_BASE_URL}/api/products` : null;
@@ -393,8 +389,6 @@
         let currentModalId = null;
         let isLoadingCatalog = false;
 
-        // Приводит объект товара из API бота (/api/products) к формату,
-        // который использует остальной код витрины (price_pair, stock_boxes и т.д.)
         function normalizeProduct(p) {
             const boxQty = p.box_qty || 8;
             const pricePair = (typeof p.price_pair === 'number') ? p.price_pair : (p.price || 0);
@@ -416,7 +410,6 @@
         }
 
         function showSyncDot(state) {
-            // state: 'ok' | 'loading' | 'error'
             const dot = document.getElementById('sync-dot');
             if (!dot) return;
             if (state === 'loading') {
@@ -442,8 +435,6 @@
             `).join('');
         }
 
-        // Загружает каталог из API бота. Если API_BASE_URL не задан или
-        // запрос упал — используется FALLBACK_PRODUCTS (или уже загруженный кэш).
         async function loadCatalog(isManualRetry = false) {
             if (isLoadingCatalog) return;
             isLoadingCatalog = true;
@@ -455,7 +446,6 @@
             showSyncDot('loading');
 
             if (!PRODUCTS_ENDPOINT) {
-                // Адрес API не настроен — работаем на резервных данных.
                 shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
                 renderCategories();
                 renderProducts();
@@ -469,11 +459,11 @@
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 8000);
-                   const res = await fetch(PRODUCTS_ENDPOINT, {
-       signal: controller.signal,
-       cache: 'no-store',
-       headers: { 'ngrok-skip-browser-warning': 'true' }
-   });
+                const res = await fetch(PRODUCTS_ENDPOINT, {
+                    signal: controller.signal,
+                    cache: 'no-store',
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
                 clearTimeout(timeoutId);
 
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -482,8 +472,6 @@
 
                 const normalized = data.map(normalizeProduct);
 
-                // Определяем, реально ли поменялось что-то, чтобы не дёргать
-                // открытую карточку товара или корзину без нужды.
                 const changed = JSON.stringify(normalized) !== JSON.stringify(shoesProducts);
                 shoesProducts = normalized;
 
@@ -512,8 +500,6 @@
 
         function initApp() {
             loadCatalog();
-            // Фоновое обновление — чтобы новые модели/цены, добавленные через
-            // /add_shoe и /edit_price в боте, появлялись на витрине без перезагрузки.
             setInterval(() => loadCatalog(), REFRESH_INTERVAL_MS);
         }
 
