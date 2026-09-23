@@ -83,6 +83,17 @@
             box-shadow: 0 0 14px #F59E0B;
             margin-top: -8px;
         }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 37%, rgba(255,255,255,0.04) 63%);
+            background-size: 400% 100%;
+            animation: skeleton-loading 1.4s ease infinite;
+        }
+        @keyframes skeleton-loading {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
+        }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex justify-center min-h-screen antialiased pb-32">
@@ -105,7 +116,6 @@
         <header class="sticky top-0 z-30 hud-glass border-b border-white/10 px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl overflow-hidden border-2 border-brand-gold/50 bg-white p-0.5 shadow-lg shrink-0">
-                    <!-- Логотип ТЯК Москва из профиля канала -->
                     <img src="photo_2025-09-26_12-18-10.jpg" alt="ТЯК Москва" class="w-full h-full object-contain rounded-[14px]" onerror="this.onerror=null; this.src='https://i.postimg.cc/Qx77Y0jN/tyak-moscow-logo.jpg';">
                 </div>
                 <div>
@@ -114,7 +124,7 @@
                         <span class="px-1.5 py-0.5 rounded text-[9px] font-black font-mono bg-amber-500/20 text-amber-400 border border-amber-500/40">ОПТ</span>
                     </div>
                     <div class="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span><b>14.1k сабов</b> • Садовод & Люблино</span>
                     </div>
                 </div>
@@ -146,6 +156,18 @@
                 <p class="text-xs text-slate-300 mt-1 font-medium leading-snug">
                     Минимальный заказ — <b>1 коробка</b> (в коробе размерный ряд одной модели одного цвета). Отправка по РФ через ТК или прямой автобус со стоянки Садовода.
                 </p>
+            </div>
+        </section>
+
+        <!-- Баннер ошибки синхронизации (скрыт по умолчанию) -->
+        <section class="px-4 pt-2" id="sync-error-banner" style="display:none;">
+            <div class="hud-card rounded-2xl p-3 border border-rose-500/40 flex items-center justify-between gap-2">
+                <p class="text-[11px] text-rose-300 leading-snug">
+                    ⚠️ Не удалось загрузить актуальный каталог с сервера. Показаны сохранённые позиции.
+                </p>
+                <button onclick="loadCatalog(true)" class="shrink-0 w-8 h-8 rounded-xl hud-glass border border-white/10 flex items-center justify-center text-sm active:scale-90">
+                    🔄
+                </button>
             </div>
         </section>
 
@@ -292,7 +314,20 @@
             if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
         } catch(e) {}
 
-        const shoesProducts = [
+        // ==========================================
+        // КОНФИГ API — АДРЕС БОТА (см. PUBLIC_API_BASE_URL в bot.py)
+        // Впиши сюда публичный https-адрес твоего сервера бота, например:
+        // 'https://api.rg-obuv.ru'  или  'https://твой-туннель.trycloudflare.com'
+        // Если оставить пустой строкой — витрина будет работать только на
+        // захардкоженных FALLBACK_PRODUCTS ниже (то, что было раньше).
+        // ==========================================
+        const API_BASE_URL = ''; // <-- ВПИШИ СЮДА АДРЕС БОТА
+        const PRODUCTS_ENDPOINT = API_BASE_URL ? `${API_BASE_URL}/api/products` : null;
+        const REFRESH_INTERVAL_MS = 60000; // фоновое обновление раз в минуту
+
+        // Резервный каталог — используется, пока идёт первая загрузка,
+        // и как fallback если API недоступен / адрес не задан.
+        const FALLBACK_PRODUCTS = [
             {
                 id: 'shoe_sale_demi_autumn',
                 cat: 'Подростковая обувь',
@@ -352,14 +387,130 @@
             }
         ];
 
+        let shoesProducts = [];
         let currentCat = 'all';
         let cart = {};
         let currentModalId = null;
+        let isLoadingCatalog = false;
+
+        // Приводит объект товара из API бота (/api/products) к формату,
+        // который использует остальной код витрины (price_pair, stock_boxes и т.д.)
+        function normalizeProduct(p) {
+            const boxQty = p.box_qty || 8;
+            const pricePair = (typeof p.price_pair === 'number') ? p.price_pair : (p.price || 0);
+            const priceBox = (typeof p.price_box === 'number') ? p.price_box : pricePair * boxQty;
+            const stockBoxes = (typeof p.stock_boxes === 'number') ? p.stock_boxes : (p.stock || 0);
+            return {
+                id: p.id,
+                cat: p.cat || 'Обувь',
+                title: p.title || 'Без названия',
+                badge: p.badge || 'NEW',
+                sizes: p.sizes || '',
+                desc: p.desc || '',
+                price_pair: pricePair,
+                box_qty: boxQty,
+                price_box: priceBox,
+                stock_boxes: stockBoxes,
+                images: (Array.isArray(p.images) && p.images.length > 0) ? p.images : ['https://placehold.co/400x400/0f172a/f59e0b?text=RG']
+            };
+        }
+
+        function showSyncDot(state) {
+            // state: 'ok' | 'loading' | 'error'
+            const dot = document.getElementById('sync-dot');
+            if (!dot) return;
+            if (state === 'loading') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+            } else if (state === 'error') {
+                dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            }
+        }
+
+        function renderSkeleton() {
+            const container = document.getElementById('products-container');
+            container.innerHTML = Array.from({ length: 4 }).map(() => `
+                <div class="hud-card rounded-2xl overflow-hidden">
+                    <div class="w-full aspect-square skeleton"></div>
+                    <div class="p-3 space-y-2">
+                        <div class="h-2.5 w-16 rounded skeleton"></div>
+                        <div class="h-3 w-full rounded skeleton"></div>
+                        <div class="h-8 w-full rounded-xl skeleton mt-2"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Загружает каталог из API бота. Если API_BASE_URL не задан или
+        // запрос упал — используется FALLBACK_PRODUCTS (или уже загруженный кэш).
+        async function loadCatalog(isManualRetry = false) {
+            if (isLoadingCatalog) return;
+            isLoadingCatalog = true;
+            document.getElementById('sync-error-banner').style.display = 'none';
+
+            if (shoesProducts.length === 0) {
+                renderSkeleton();
+            }
+            showSyncDot('loading');
+
+            if (!PRODUCTS_ENDPOINT) {
+                // Адрес API не настроен — работаем на резервных данных.
+                shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+                renderCategories();
+                renderProducts();
+                updateCartUI();
+                showSyncDot('error');
+                if (isManualRetry) showToast('Адрес API бота не настроен в коде витрины', '⚠️');
+                isLoadingCatalog = false;
+                return;
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const res = await fetch(PRODUCTS_ENDPOINT, { signal: controller.signal, cache: 'no-store' });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (!Array.isArray(data) || data.length === 0) throw new Error('Пустой ответ каталога');
+
+                const normalized = data.map(normalizeProduct);
+
+                // Определяем, реально ли поменялось что-то, чтобы не дёргать
+                // открытую карточку товара или корзину без нужды.
+                const changed = JSON.stringify(normalized) !== JSON.stringify(shoesProducts);
+                shoesProducts = normalized;
+
+                if (changed || document.getElementById('products-container').children.length === 0) {
+                    renderCategories();
+                    renderProducts();
+                    updateCartUI();
+                }
+                showSyncDot('ok');
+                if (isManualRetry) showToast('Каталог обновлён', '✅');
+            } catch (e) {
+                console.error('Ошибка загрузки каталога:', e);
+                showSyncDot('error');
+                document.getElementById('sync-error-banner').style.display = 'block';
+                if (shoesProducts.length === 0) {
+                    shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+                    renderCategories();
+                    renderProducts();
+                    updateCartUI();
+                }
+                if (isManualRetry) showToast('Не удалось загрузить каталог', '⚠️');
+            } finally {
+                isLoadingCatalog = false;
+            }
+        }
 
         function initApp() {
-            renderCategories();
-            renderProducts();
-            updateCartUI();
+            loadCatalog();
+            // Фоновое обновление — чтобы новые модели/цены, добавленные через
+            // /add_shoe и /edit_price в боте, появлялись на витрине без перезагрузки.
+            setInterval(() => loadCatalog(), REFRESH_INTERVAL_MS);
         }
 
         function renderCategories() {
@@ -387,16 +538,23 @@
             const container = document.getElementById('products-container');
             const filtered = currentCat === 'all' ? shoesProducts : shoesProducts.filter(p => p.cat === currentCat);
 
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center py-10 text-xs text-slate-500 font-mono">Нет товаров в этой категории</div>`;
+                return;
+            }
+
             container.innerHTML = filtered.map(p => {
                 const inCart = cart[p.id]?.qty_boxes || 0;
+                const outOfStock = p.stock_boxes <= 0;
                 return `
-                    <div class="hud-card rounded-2xl overflow-hidden flex flex-col justify-between">
+                    <div class="hud-card rounded-2xl overflow-hidden flex flex-col justify-between ${outOfStock ? 'opacity-60' : ''}">
                         <div onclick="openProductModal('${p.id}')" class="cursor-pointer">
                             <div class="relative w-full aspect-square bg-slate-900 overflow-hidden">
-                                <img src="${p.images[0]}" alt="${p.title}" class="w-full h-full object-cover">
+                                <img src="${p.images[0]}" alt="${p.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/0f172a/f59e0b?text=RG';">
                                 <span class="absolute top-2 left-2 bg-amber-400 text-black font-black text-[9px] px-2 py-0.5 rounded font-mono">
                                     ${p.badge}
                                 </span>
+                                ${outOfStock ? `<span class="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] font-black font-mono text-rose-300">НЕТ В НАЛИЧИИ</span>` : ''}
                             </div>
                             <div class="p-3 pb-1">
                                 <span class="text-[9px] font-mono text-slate-400 block">${p.cat}</span>
@@ -404,21 +562,23 @@
                                 
                                 <div class="mt-2 hud-glass p-2 rounded-xl border border-white/5 font-mono">
                                     <div class="text-xs font-black text-amber-400">${p.price_box.toLocaleString('ru-RU')} ₽ <span class="text-[9px] font-normal text-slate-400">/ короб</span></div>
-                                    <div class="text-[10px] text-emerald-400 mt-0.5">${p.price_pair} ₽ / пара (8 пар)</div>
+                                    <div class="text-[10px] text-emerald-400 mt-0.5">${p.price_pair} ₽ / пара (${p.box_qty} пар)</div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="p-3 pt-2">
-                            ${inCart === 0 
-                                ? `<button onclick="updateCartBoxes('${p.id}', 1)" class="w-full py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-black text-xs rounded-xl shadow-md active:scale-95 transition font-mono">
-                                    + КОРОБ
-                                   </button>`
-                                : `<div class="flex items-center justify-between hud-glass border border-amber-400/40 rounded-xl p-1">
-                                    <button onclick="updateCartBoxes('${p.id}',${inCart - 1})" class="w-7 h-7 flex items-center justify-center font-black text-amber-400 active:scale-90">-</button>
-                                    <span class="text-xs font-mono font-bold text-white">${inCart} кор.</span>
-                                    <button onclick="updateCartBoxes('${p.id}',${inCart + 1})" class="w-7 h-7 flex items-center justify-center font-black text-amber-400 active:scale-90">+</button>
-                                   </div>`
+                            ${outOfStock
+                                ? `<button disabled class="w-full py-2 bg-slate-800 text-slate-500 font-black text-xs rounded-xl font-mono cursor-not-allowed">НЕТ В НАЛИЧИИ</button>`
+                                : (inCart === 0 
+                                    ? `<button onclick="updateCartBoxes('${p.id}', 1)" class="w-full py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-black text-xs rounded-xl shadow-md active:scale-95 transition font-mono">
+                                        + КОРОБ
+                                       </button>`
+                                    : `<div class="flex items-center justify-between hud-glass border border-amber-400/40 rounded-xl p-1">
+                                        <button onclick="updateCartBoxes('${p.id}',${inCart - 1})" class="w-7 h-7 flex items-center justify-center font-black text-amber-400 active:scale-90">-</button>
+                                        <span class="text-xs font-mono font-bold text-white">${inCart} кор.</span>
+                                        <button onclick="updateCartBoxes('${p.id}',${inCart + 1})" class="w-7 h-7 flex items-center justify-center font-black text-amber-400 active:scale-90">+</button>
+                                       </div>`)
                             }
                         </div>
                     </div>
@@ -435,21 +595,23 @@
             document.getElementById('modal-main-img').src = p.images[0];
             document.getElementById('modal-title').innerText = p.title;
             document.getElementById('modal-pair-price').innerText = `${p.price_pair} ₽ / пара`;
-            document.getElementById('modal-box-price').innerText = `${p.price_box.toLocaleString('ru-RU')} ₽ / короб (8 пар)`;
+            document.getElementById('modal-box-price').innerText = `${p.price_box.toLocaleString('ru-RU')} ₽ / короб (${p.box_qty} пар)`;
             document.getElementById('modal-sizes').innerText = p.sizes;
             document.getElementById('modal-desc').innerText = p.desc;
 
             const thumbBox = document.getElementById('modal-thumbnails');
             thumbBox.innerHTML = p.images.map(img => `
-                <img src="${img}" onclick="document.getElementById('modal-main-img').src='${img}'" class="w-12 h-12 object-cover rounded-xl border border-white/10 shrink-0 cursor-pointer">
+                <img src="${img}" onclick="document.getElementById('modal-main-img').src='${img}'" class="w-12 h-12 object-cover rounded-xl border border-white/10 shrink-0 cursor-pointer" onerror="this.style.display='none';">
             `).join('');
 
-            const currentBoxes = cart[p.id]?.qty_boxes || 1;
+            const maxBoxes = Math.max(p.stock_boxes, 1);
+            const currentBoxes = Math.min(cart[p.id]?.qty_boxes || 1, maxBoxes);
             const slider = document.getElementById('modal-slider');
             slider.min = 1;
-            slider.max = p.stock_boxes;
+            slider.max = maxBoxes;
             slider.value = currentBoxes;
             document.getElementById('slider-number-input').value = currentBoxes;
+            document.getElementById('slider-number-input').max = maxBoxes;
 
             updateModalCalculations(p, currentBoxes);
 
@@ -472,9 +634,11 @@
         }
 
         function onNumberInputChange(val) {
-            const qty = parseInt(val) || 1;
-            document.getElementById('modal-slider').value = qty;
             const p = shoesProducts.find(x => x.id === currentModalId);
+            const maxBoxes = p ? Math.max(p.stock_boxes, 1) : 999;
+            let qty = parseInt(val) || 1;
+            qty = Math.min(Math.max(qty, 1), maxBoxes);
+            document.getElementById('modal-slider').value = qty;
             if (p) updateModalCalculations(p, qty);
         }
 
@@ -506,7 +670,7 @@
             if (newBoxes <= 0) {
                 delete cart[id];
             } else {
-                cart[id] = { qty_boxes: newBoxes, price_box: p.price_box, title: p.title };
+                cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: p.price_box, title: p.title };
             }
             renderProducts();
             updateCartUI();
@@ -543,7 +707,7 @@
                     <div class="flex justify-between items-center hud-glass p-2.5 rounded-xl border border-white/5 text-xs font-mono">
                         <div>
                             <p class="font-bold text-white">${item.title}</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">${item.qty_boxes} кор. (${item.qty_boxes * 8} пар) × ${item.price_box.toLocaleString('ru-RU')} ₽</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">${item.qty_boxes} кор. × ${item.price_box.toLocaleString('ru-RU')} ₽</p>
                         </div>
                         <span class="font-black text-amber-400">${sub.toLocaleString('ru-RU')} ₽</span>
                     </div>
