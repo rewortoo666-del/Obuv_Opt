@@ -220,7 +220,35 @@
         <div class="ticker-track" id="ticker-track"></div>
     </div>
 
+    <section id="home-depts" class="px-4 pt-3">
+        <h1 class="text-[22px] font-extrabold mb-1">Что нужно сегодня?</h1>
+        <p class="text-[12px] text-slate-500 font-semibold mb-3">Светлый каталог как на маркетплейсе. Сначала отдел, потом модели.</p>
+        <div class="grid grid-cols-2 gap-3">
+            <button type="button" onclick="openDept('shoes')" class="card p-4 text-left">
+                <div class="text-3xl mb-2">👟</div>
+                <div class="font-extrabold">Обувь</div>
+                <div class="text-[11px] text-slate-400">Короба 8 пар • Садовод</div>
+            </button>
+            <button type="button" onclick="openDept('clothes')" class="card p-4 text-left">
+                <div class="text-3xl mb-2">👗</div>
+                <div class="font-extrabold">Одежда</div>
+                <div class="text-[11px] text-slate-400">Платья, опт от поставщика</div>
+            </button>
+            <button type="button" onclick="openDept('home')" class="card p-4 text-left">
+                <div class="text-3xl mb-2">🏠</div>
+                <div class="font-extrabold">Дом и техника</div>
+                <div class="text-[11px] text-slate-400">Скоро витрина поставщиков</div>
+            </button>
+            <button type="button" onclick="openDept('kids')" class="card p-4 text-left">
+                <div class="text-3xl mb-2">🧸</div>
+                <div class="font-extrabold">Детское</div>
+                <div class="text-[11px] text-slate-400">Обувь и одежда</div>
+            </button>
+        </div>
+    </section>
+    <div id="catalog-wrap" class="hidden">
     <div class="px-4 pt-2">
+        <button type="button" onclick="showHome()" class="text-[12px] font-extrabold text-slate-500 mb-2">← К отделам</button>
         <button type="button" id="price-download-btn" onclick="downloadPrice()" class="w-full h-10 rounded-xl bg-white border border-slate-200 text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
             📥 Скачать остатки с фото (Excel / PDF)
         </button>
@@ -232,7 +260,7 @@
             <div class="relative p-4 pr-24">
                 <div class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-amber-300 mb-1">● LIVE • ОТГРУЗКА СЕГОДНЯ</div>
                 <div id="hero-title" class="text-[21px] font-extrabold leading-6">Садовод. Короба. Без посредников.</div>
-                <div id="hero-sub" class="mt-2 text-[11px] text-slate-200 leading-5 font-semibold">ТЦ Салют • 2-3-01<br>+7 917 536-89-40 • Равшан</div>
+                <div id="hero-sub" class="mt-2 text-[11px] text-slate-200 leading-5 font-semibold">ТЦ Салют • 23.03<br>+7 917 536-89-40 • Равшан</div>
             </div>
             <div class="hero-dots" id="hero-dots"></div>
         </div>
@@ -260,7 +288,7 @@
 
     <main id="products-container" class="p-4 grid grid-cols-2 gap-3"></main>
 </div>
-
+</div>
 
 <nav class="nav">
     <button onclick="openSearch()" class="flex flex-col items-center gap-0.5 text-[10px] font-bold text-slate-500">
@@ -488,15 +516,16 @@
         </div>
         <div id="checkout-cart-items" class="space-y-2 max-h-36 overflow-auto"></div>
         <div id="checkout-pairs" class="text-[11px] text-slate-400 font-semibold"></div>
-        <input id="buyer-company" placeholder="ФИО байера или канал *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
-        <input id="buyer-contacts" placeholder="Телефон *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        <input id="buyer-company" placeholder="Как подписать короб (имя) *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        <input id="buyer-contacts" placeholder="Телефон только Степану *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        <p class="text-[11px] text-slate-400 font-semibold">Оплату не проводим в приложении. Степан пришлёт карту в Telegram.</p>
 
         <div class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wide">Доставка</div>
         <div class="grid grid-cols-1 gap-2">
             <button type="button" id="ship-bus" onclick="setShip('bus')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">1. Рейсовый автобус (Садовод / ТЯК Люблино)</button>
             <button type="button" id="ship-cdek" onclick="setShip('cdek')" class="ship-opt active rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">2. СДЭК</button>
             <button type="button" id="ship-tk" onclick="setShip('tk')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">3. ТК (ПЭК / Деловые Линии / КИТ)</button>
-            <button type="button" id="ship-pickup" onclick="setShip('pickup')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">4. Самовывоз со склада (Линия 2-3-01)</button>
+            <button type="button" id="ship-pickup" onclick="setShip('pickup')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">4. Самовывоз со склада (Салют 23.03)</button>
         </div>
         <div id="cdek-fields" class="space-y-2">
             <input id="buyer-city" placeholder="Город назначения *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
@@ -517,29 +546,11 @@
             <input id="bus-stand" placeholder="Номер стоянки на рынке *" class="w-full h-11 rounded-2xl bg-amber-50 border border-amber-200 px-3 text-sm font-semibold">
             <input id="bus-plate" placeholder="Номер автобуса / телефон водителя *" class="w-full h-11 rounded-2xl bg-amber-50 border border-amber-200 px-3 text-sm font-semibold">
         </div>
-
-        <div class="rounded-2xl border border-slate-200 p-3 space-y-2">
-            <div class="flex items-center justify-between">
-                <b class="text-[13px]">Оплата СБП</b>
-                <span class="text-[10px] font-extrabold text-emerald-600">АЛЬФА-БАНК</span>
-            </div>
-            <div class="flex gap-3 items-center">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://qr.nspk.ru/79175368940" alt="QR СБП" class="w-20 h-20 rounded-xl bg-white border">
-                <div class="min-w-0">
-                    <div class="text-[12px] font-extrabold">+7 917 536-89-40</div>
-                    <div class="text-[10px] text-slate-400">Альфа-Банк / Равшан</div>
-                    <button type="button" onclick="copySbp()" class="mt-1 h-8 px-3 rounded-lg bg-slate-900 text-white text-[10px] font-extrabold">Скопировать номер</button>
-                </div>
-            </div>
-            <label class="block text-[11px] font-bold text-slate-500">📎 Прикрепить скриншот чека об оплате</label>
-            <input id="receipt-file" type="file" accept="image/*" class="w-full text-[11px]">
-        </div>
-
         <div class="flex justify-between items-center">
             <span class="text-sm font-bold">Итого</span>
             <span id="checkout-total" class="text-lg font-extrabold text-[#E11D2E]">0 ₽</span>
         </div>
-        <button id="order-submit-btn" onclick="sendOrderToBot()" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">Подтвердить заказ и отправить на склад</button>
+        <button id="order-submit-btn" onclick="sendOrderToBot()" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">Отправить заявку Степану</button>
         <div id="order-fallback" class="hidden rounded-2xl bg-amber-50 p-3 text-[11px] text-amber-800">
             <textarea id="order-fallback-text" class="w-full h-24 bg-transparent outline-none"></textarea>
             <button onclick="copyFallbackOrder()" class="mt-2 w-full h-10 rounded-xl bg-amber-400 font-extrabold">СКОПИРОВАТЬ ЗАЯВКУ</button>
@@ -869,6 +880,22 @@ function renderCategories() {
         </button>`;
     }).join('');
 }
+
+function showHome() {
+    document.getElementById('home-depts').classList.remove('hidden');
+    document.getElementById('catalog-wrap').classList.add('hidden');
+}
+function openDept(key) {
+    if (key !== 'shoes' && key !== 'kids') {
+        showToast(key === 'clothes' ? 'Одежда: поставщик добавит витрину' : 'Раздел откроется после поставщиков', '⏳');
+        return;
+    }
+    document.getElementById('home-depts').classList.add('hidden');
+    document.getElementById('catalog-wrap').classList.remove('hidden');
+    if (key === 'kids') setCategory('slippers');
+    else setCategory('all');
+    window.scrollTo(0,0);
+}
 function setCategory(cat) { currentCat = cat; closeSheets(); renderCategories(); renderProducts(); }
 function filteredList() {
     const q = (document.getElementById('search-input') && document.getElementById('search-input').value || '').toLowerCase();
@@ -1042,7 +1069,7 @@ function commitModalCart(id, boxes, el) { updateCartBoxes(id, boxes, el); closeP
 function updateCartBoxes(id, newBoxes, el) {
     const p = shoesProducts.find(x => x.id === id); if (!p) return;
     if (newBoxes <= 0) delete cart[id];
-    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: boxUnitPrice(p, newBoxes), title: p.title };
+    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: boxUnitPrice(p, newBoxes), title: p.title, vendor_id: p.vendor_id || 'rg_shoes', vendor_name: p.vendor_name || 'Надя / обувь RG' };
     if (el && newBoxes > 0) flyToCart(el);
     renderProducts(); updateCartUI();
 }
@@ -1067,7 +1094,7 @@ function setShip(mode) {
 function currentTk() {
     if (shipMode === 'cdek') return 'СДЭК';
     if (shipMode === 'tk') return document.getElementById('buyer-tk-extra').value;
-    if (shipMode === 'pickup') return 'Самовывоз Линия 2-3-01';
+    if (shipMode === 'pickup') return 'Самовывоз Салют 23.03';
     return 'Рейсовый автобус (Садовод / ТЯК Люблино)';
 }
 function showCheckout() {
@@ -1186,7 +1213,7 @@ function sendOrderToBot() {
         if (!tc || !tf || !td) { showToast('Для ТК укажите город, ФИО и паспорт/ИНН', '⚠️'); return; }
         city = tc; busNote = 'Получатель: ' + tf + '; документ: ' + td;
     }
-    if (shipMode === 'pickup') { city = city || 'Самовывоз Салют 2-3-01'; }
+    if (shipMode === 'pickup') { city = city || 'Самовывоз Салют 23.03'; }
     if (shipMode === 'bus') {
         const busCity = document.getElementById('bus-city').value.trim();
         const stand = document.getElementById('bus-stand').value.trim();
@@ -1200,7 +1227,7 @@ function sendOrderToBot() {
     }
     const cartItems = []; let totalSum = 0;
     Object.entries(cart).forEach(([id, item]) => {
-        cartItems.push({ id, title: item.title, qty: item.qty_boxes, price: item.price_box, total: item.qty_boxes * item.price_box });
+        cartItems.push({ id, title: item.title, qty: item.qty_boxes, price: item.price_box, total: item.qty_boxes * item.price_box, vendor_id: item.vendor_id, vendor_name: item.vendor_name });
         totalSum += item.qty_boxes * item.price_box;
     });
     const payload = {
@@ -1240,7 +1267,7 @@ const TICKS = [
 ];
 document.getElementById('ticker-track').innerHTML = (TICKS.concat(TICKS).map(s => '  •  ' + s).join(''));
 const HEROES = [
-    { img: 'https://i.postimg.cc/34TQJjq6/42145.jpg', title: 'Садовод. Короба. Без посредников.', sub: 'ТЦ Салют • 2-3-01<br>+7 917 536-89-40 • Равшан' },
+    { img: 'https://i.postimg.cc/34TQJjq6/42145.jpg', title: 'Садовод. Короба. Без посредников.', sub: 'ТЦ Салют • 23.03<br>+7 917 536-89-40 • Равшан' },
     { img: 'https://i.postimg.cc/1nH2mkw6/6122.jpg', title: 'Зима уже уходит со склада.', sub: 'Шерсть Dino Albat • 8 пар в коробе<br>Остатки жгут — берите ростовкой' },
     { img: 'https://i.postimg.cc/d7ggNRvC/photo-2026-09-22-20-40-29.jpg', title: 'Распродажа маломерок 32–37.', sub: '225 ₽ пара • 1 800 ₽ короб<br>Идеально под рынок и WB' }
 ];
