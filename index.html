@@ -1,706 +1,1460 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>RG Обувь — Салют 23.03</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RG Обувь Оптом | Садовод и Люблино</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Manrope', 'sans-serif'] },
+                    colors: {
+                        brand: { red: '#E11D2E', ink: '#111827', mute: '#6B7280', line: '#EEF2F6', card: '#FFFFFF' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--tg-safe-area-inset-bottom, 0px)); }
+        * { box-sizing: border-box; }
+        body {
+            font-family: Manrope, sans-serif;
+            background: #F4F6F8;
+            color: #111827;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+        }
+        .app { width: 100%; max-width: 480px; margin: 0 auto; min-height: 100vh; background: #F4F6F8; position: relative; padding-top: 62px; padding-bottom: calc(88px + var(--safe-bottom)); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(17,24,39,.06);
+            animation: cardIn .45s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(14px) scale(.98); }
+            to { opacity: 1; transform: none; }
+        }
+        .hero-shine::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 48%, transparent 62%);
+            animation: shine 3.8s ease-in-out infinite;
+        }
+        @keyframes shine { 0% { transform: translateX(-40%); } 100% { transform: translateX(40%); } }
+        .stock-badge {
+            animation: stockPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes stockPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225,29,46,.35); }
+            50% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(225,29,46,0); }
+        }
+        .margin-chip {
+            background: linear-gradient(180deg, #ECFDF5 0%, #D1FAE5 100%);
+            animation: marginGlow 2.6s ease-in-out infinite;
+        }
+        @keyframes marginGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,.0); }
+            50% { box-shadow: 0 6px 16px rgba(16,185,129,.18); }
+        }
+        .btn-pop { transition: transform .15s ease, box-shadow .15s ease; }
+        .btn-pop:active { transform: scale(.96); }
+        .fly {
+            position: fixed; z-index: 90; pointer-events: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #E11D2E; color: #fff; font-size: 11px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .55s cubic-bezier(.16,1,.3,1), opacity .55s;
+        }
+        .sheet {
+            position: fixed; inset: 0; z-index: 80; background: rgba(8,12,20,.72);
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity .25s ease;
+        }
+        .sheet.open { opacity: 1; pointer-events: auto; }
+        .sheet-panel {
+            width: 100%; max-width: 480px; background: #fff; border-radius: 20px 20px 0 0;
+            height: calc(100dvh - 8px); max-height: calc(100dvh - 8px);
+            overflow: auto; transform: translateY(110%);
+            transition: transform .32s cubic-bezier(.16,1,.3,1);
+            padding-bottom: calc(20px + var(--safe-bottom));
+            -webkit-overflow-scrolling: touch;
+        }
+        #product-modal.sheet-panel, #product-sheet {
+            height: calc(100dvh - 8px); max-height: calc(100dvh - 8px);
+        }
+        .sheet.open .sheet-panel { transform: translateY(0); }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { height: 6px; background: #E5E7EB; border-radius: 99px; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+            background: #E11D2E; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(225,29,46,.35); margin-top: -8px;
+        }
+        .toast {
+            position: fixed; left: 50%; bottom: calc(96px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px);
+            z-index: 80; background: #111827; color: #fff; border-radius: 14px; padding: 10px 14px;
+            font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none; transition: .25s;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .nav {
+            position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+            width: 100%; max-width: 480px; background: #fff;
+            border-top: 1px solid #EEF2F6; display: grid; grid-template-columns: repeat(4,1fr);
+            padding: 8px 6px calc(8px + var(--safe-bottom)); z-index: 40;
+        }
+        .fab {
+            position: fixed; right: calc(50% - 216px); bottom: calc(78px + var(--safe-bottom));
+            width: 52px; height: 52px; border-radius: 50%; background: #E11D2E; color: #fff;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(225,29,46,.35);
+            z-index: 41; border: 0; animation: fabIn .35s cubic-bezier(.16,1,.3,1);
+        }
+        @keyframes fabIn { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @media (max-width: 480px) { .fab { right: 16px; } }
+        .skeleton { background: linear-gradient(90deg,#eee 25%,#f7f7f7 37%,#eee 63%); background-size: 400% 100%; animation: sk 1.3s ease infinite; }
+        @keyframes sk { to { background-position: 0 50%; } }
+        .ship-opt { border: 1.5px solid #E5E7EB; }
+        .ship-opt.active { border-color: #E11D2E; background: #FFF1F2; }
+        .bus-fields { max-height: 0; overflow: hidden; transition: max-height .35s ease, opacity .25s ease, margin .25s; opacity: 0; }
+        .bus-fields.open { max-height: 240px; opacity: 1; margin-top: 8px; }
 
-  <!-- Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+        .ticker {
+            overflow: hidden; white-space: nowrap;
+            background: #111827; color: #fff; font-size: 11px; font-weight: 700;
+            padding: 7px 0;
+        }
+        .ticker-track { display: inline-block; animation: ticker 18s linear infinite; }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .trust {
+            display: grid; grid-template-columns: repeat(3,1fr); gap: 8px;
+        }
+        .trust div {
+            background: #fff; border-radius: 14px; padding: 10px 8px; text-align: center;
+            box-shadow: 0 6px 16px rgba(17,24,39,.05);
+        }
+        .card { transition: transform .2s ease, box-shadow .2s ease; }
+        .card:active { transform: scale(.98); }
+        .photo-shine { position: relative; overflow: hidden; }
+        .photo-shine::after {
+            content:''; position:absolute; inset:0;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.28) 50%, transparent 60%);
+            transform: translateX(-120%);
+        }
+        .card:active .photo-shine::after { animation: swipe 0.7s ease; }
+        @keyframes swipe { to { transform: translateX(120%); } }
+        .hero-dots { position:absolute; left:16px; bottom:10px; display:flex; gap:5px; z-index:2; }
+        .hero-dots i { width:6px; height:6px; border-radius:99px; background:rgba(255,255,255,.35); display:block; }
+        .hero-dots i.on { width:16px; background:#fff; }
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .btn-box {
+            width: 100%; height: 38px; border: 0; border-radius: 12px;
+            background: linear-gradient(135deg, #E11D2E 0%, #9F1239 100%);
+            color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .02em;
+            box-shadow: 0 8px 16px rgba(225,29,46,.28);
+        }
+        .btn-ghost {
+            height: 34px; border-radius: 12px; border: 1px solid #E5E7EB; background: #fff;
+            font-size: 11px; font-weight: 800; color: #111827;
+        }
+        .stepper {
+            height: 38px; border-radius: 12px; background: #111827; color: #fff;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 6px;
+        }
+        .stepper button { width: 28px; height: 28px; border: 0; border-radius: 9px; background: #fff; color: #111; font-weight: 900; }
+        .size-dot {
+            display: inline-flex; min-width: 22px; height: 18px; padding: 0 4px; align-items: center; justify-content: center;
+            border-radius: 6px; background: #F3F4F6; color: #4B5563; font-size: 9px; font-weight: 800;
+        }
+        .fav {
+            position: absolute; left: 8px; bottom: 8px; width: 28px; height: 28px; border: 0;
+            border-radius: 10px; background: rgba(255,255,255,.92); font-size: 14px;
+        }
+        .fav.on { background: #E11D2E; }
 
-    :root {
-      --sat: env(safe-area-inset-top, 0px);
-      --sab: env(safe-area-inset-bottom, 0px);
-    }
-
-    body {
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #ECEFF1;
-    }
-
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    .tap-press:active {
-      transform: scale(0.96);
-    }
-
-    .sheet-backdrop {
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(8px);
-    }
-  </style>
+        .chip {
+            border: 1px solid #E5E7EB; background: #fff; color: #374151;
+            border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 800;
+            white-space: nowrap;
+        }
+        .chip.on { background: #111827; color: #fff; border-color: #111827; }
+        .switch {
+            width: 44px; height: 26px; border-radius: 999px; background: #E5E7EB; position: relative; border: 0;
+        }
+        .switch::after {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+            border-radius: 50%; background: #fff; transition: .2s;
+        }
+        .switch.on { background: #111827; }
+        .switch.on::after { left: 21px; }
+    </style>
 </head>
-<body class="flex justify-center items-start min-h-screen">
-
-  <!-- МОБИЛЬНЫЙ КОНТЕЙНЕР (СТРОГО ПО РАЗМЕРУ СМАРТФОНА 430px) -->
-  <div class="w-full max-w-[430px] min-h-screen bg-[#F8FAFC] shadow-2xl relative flex flex-col justify-between overflow-x-hidden border-x border-slate-200/50">
-
-    <!-- ВЕРХНИЙ БЛОК / HEADER -->
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)]" style="padding-top: calc(var(--sat) + 8px);">
-      
-      <!-- Павильон и кнопка ярлыка -->
-      <div class="px-3.5 pb-2 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 font-extrabold text-base shadow-sm">
-            RG
-          </div>
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <h1 class="font-black text-sm tracking-tight text-slate-900 leading-none">RG ОБУВЬ</h1>
-              <span class="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Опт</span>
+<body>
+<div class="app">
+    <header class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-width-[480px] z-50 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-11 h-11 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                <img src="https://i.postimg.cc/0QsGwkKw/photo-2025-09-26-12-18-10-(2).jpg" alt="RG" class="w-full h-full object-contain">
             </div>
-            <p class="text-[11px] text-slate-500 font-semibold flex items-center mt-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5 animate-pulse"></span>
-              Салют 23.03 • В наличии
-            </p>
-          </div>
+            <div class="min-w-0">
+                <div class="text-[15px] font-extrabold leading-tight truncate">RG OFFICIAL STORE</div>
+                <div class="text-[10px] text-slate-500 font-semibold">Обувь оптом • Садовод / Люблино</div>
+            </div>
         </div>
-
-        <button onclick="openPwaModal()" class="flex items-center space-x-1 bg-slate-100 active:scale-95 transition px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700">
-          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-slate-900"></i>
-          <span>Ярлык</span>
-        </button>
-      </div>
-
-      <!-- 1. ВЕРХНИЕ СФЕРЫ (3 ВЫБОРА) -->
-      <div class="px-3 py-1.5 grid grid-cols-3 gap-1.5">
-        <button onclick="switchSector('shoes')" id="sectorShoesBtn" class="py-2 rounded-xl bg-slate-900 text-white font-extrabold text-[11px] flex flex-col items-center justify-center shadow-sm tap-press">
-          <i data-lucide="footprints" class="w-3.5 h-3.5 mb-0.5"></i>
-          <span>Обувь</span>
-        </button>
-        <button onclick="switchSector('clothes')" class="py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-[11px] flex flex-col items-center justify-center tap-press relative">
-          <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[7px] font-black px-1 rounded-full">Скоро</span>
-          <i data-lucide="shirt" class="w-3.5 h-3.5 mb-0.5 text-slate-300"></i>
-          <span>Одежда</span>
-        </button>
-        <button onclick="switchSector('tech')" class="py-2 rounded-xl bg-slate-100 text-slate-400 font-bold text-[11px] flex flex-col items-center justify-center tap-press relative">
-          <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[7px] font-black px-1 rounded-full">Скоро</span>
-          <i data-lucide="sparkles" class="w-3.5 h-3.5 mb-0.5 text-slate-300"></i>
-          <span>Мелочи</span>
-        </button>
-      </div>
-
-      <!-- 2. МУЖСКОЕ / ЖЕНСКОЕ / ДЕТСКОЕ (KFC СТИЛЬ) -->
-      <div class="px-3 py-1.5 flex items-center space-x-1 border-t border-slate-100">
-        <button onclick="setGender('all')" class="gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-900 text-white" data-gender="all">Все</button>
-        <button onclick="setGender('men')" class="gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-100 text-slate-600" data-gender="men">Мужские</button>
-        <button onclick="setGender('women')" class="gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-100 text-slate-600" data-gender="women">Женские</button>
-        <button onclick="setGender('kids')" class="gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-100 text-slate-600" data-gender="kids">Детские</button>
-      </div>
-
-      <!-- Поиск и подкатегории (Скролл) -->
-      <div class="px-3 pb-2">
-        <div class="relative mb-2">
-          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Поиск: зима, кроссовки, тапочки..." class="w-full bg-slate-100 border-none rounded-xl pl-8 pr-4 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-slate-900 focus:bg-white outline-none">
+        <div class="flex items-center gap-1">
+            <a href="https://wa.me/79175368940" target="_blank" class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-sm font-black">W</a>
+            <a href="https://t.me/obuv_optom_rg" target="_blank" class="h-9 px-2.5 rounded-xl bg-[#E11D2E] text-white text-[10px] font-extrabold flex items-center">Канал</a>
         </div>
-
-        <div class="flex space-x-1.5 overflow-x-auto hide-scrollbar py-0.5" id="subCatsBar">
-          <!-- Генерируются JS -->
-        </div>
-      </div>
     </header>
-
-    <!-- СЕТКА КАТАЛОГА (СТРОГО ПОД ЭКРАН ТЕЛЕФОНА) -->
-    <main class="flex-1 px-3 pt-2.5 pb-28">
-      <div class="grid grid-cols-2 gap-2" id="productsGrid">
-        <!-- Генерируется из JS -->
-      </div>
-    </main>
-
-    <!-- ПЛАВАЮЩАЯ ПАНЕЛЬ КОРЗИНЫ НАД НАВБАРОМ -->
-    <div id="bottomCartBar" class="fixed bottom-[74px] left-0 right-0 max-w-[430px] mx-auto px-3 z-40 transform translate-y-36 transition-transform duration-300 ease-out pointer-events-none">
-      <button onclick="openCart()" class="w-full bg-slate-900 hover:bg-black pointer-events-auto text-white p-3 rounded-2xl shadow-xl flex items-center justify-between tap-press">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center relative">
-            <i data-lucide="package" class="w-4 h-4 text-amber-400"></i>
-            <span id="badgeCount" class="absolute -top-1 -right-1 bg-red-500 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
-          </div>
-          <div class="text-left">
-            <p id="barBoxes" class="text-xs font-extrabold leading-tight">0 коробов</p>
-            <p id="barPairs" class="text-[10px] text-slate-400">0 пар в заказе</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-1.5">
-          <span id="barTotal" class="text-sm font-black text-white">0 ₽</span>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-        </div>
-      </button>
+    <div class="ticker">
+        <div class="ticker-track" id="ticker-track"></div>
     </div>
 
-    <!-- НАТИВНЫЙ НИЖНИЙ НАВБАР (КАК В iOS / ANDROID) -->
-    <nav class="sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 flex items-center justify-around" style="padding-bottom: calc(var(--sab) + 8px);">
-      <button onclick="setGender('all')" class="flex flex-col items-center text-slate-900 tap-press">
-        <i data-lucide="layout-grid" class="w-5 h-5"></i>
-        <span class="text-[9px] font-bold mt-0.5">Каталог</span>
-      </button>
-      <button onclick="document.getElementById('searchInput').focus()" class="flex flex-col items-center text-slate-400 tap-press">
-        <i data-lucide="search" class="w-5 h-5"></i>
-        <span class="text-[9px] font-bold mt-0.5">Поиск</span>
-      </button>
-      <button onclick="openCart()" class="flex flex-col items-center text-slate-400 tap-press relative">
-        <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-        <span class="text-[9px] font-bold mt-0.5">Накладная</span>
-      </button>
-      <button onclick="openPwaModal()" class="flex flex-col items-center text-slate-400 tap-press">
-        <i data-lucide="map-pin" class="w-5 h-5"></i>
-        <span class="text-[9px] font-bold mt-0.5">Павильон</span>
-      </button>
-    </nav>
+    <div class="px-4 pt-2">
+        <button type="button" id="price-download-btn" onclick="downloadPrice()" class="w-full h-10 rounded-xl bg-white border border-slate-200 text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
+            📥 Скачать остатки с фото (Excel / PDF)
+        </button>
+    </div>
+    <section class="px-4 pt-3">
+        <div id="hero-card" class="hero-shine relative overflow-hidden rounded-[20px] min-h-[168px] text-white" style="background:linear-gradient(135deg,#0B1C3A 0%,#16325C 55%,#1E4A7A 100%);">
+            <img id="hero-img" src="https://i.postimg.cc/34TQJjq6/42145.jpg" alt="" class="absolute right-0 bottom-0 h-full w-[55%] object-cover opacity-75">
+            <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(8,18,38,.94) 40%,rgba(8,18,38,.2) 100%);"></div>
+            <div class="relative p-4 pr-24">
+                <div class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-amber-300 mb-1">● LIVE • ОТГРУЗКА СЕГОДНЯ</div>
+                <div id="hero-title" class="text-[21px] font-extrabold leading-6">Садовод. Короба. Без посредников.</div>
+                <div id="hero-sub" class="mt-2 text-[11px] text-slate-200 leading-5 font-semibold">ТЦ Салют • 2-3-01<br>+7 917 536-89-40 • Равшан</div>
+            </div>
+            <div class="hero-dots" id="hero-dots"></div>
+        </div>
+        <div class="trust mt-3">
+            <div><div class="text-[15px] font-extrabold">14.1k</div><div class="text-[9px] text-slate-400 font-bold">байеров</div></div>
+            <div><div class="text-[15px] font-extrabold">1 короб</div><div class="text-[9px] text-slate-400 font-bold">мин. опт</div></div>
+            <div><div class="text-[24px] font-extrabold">24ч</div><div class="text-[9px] text-slate-400 font-bold">сборка</div></div>
+        </div>
+    </section>
 
-    <!-- ВЫЕЗЖАЮЩАЯ ШТОРКА КОРЗИНЫ (DRAWER) -->
-    <div id="cartModal" class="fixed inset-0 z-50 pointer-events-none transition-opacity duration-300 opacity-0">
-      <div onclick="closeCart()" class="sheet-backdrop absolute inset-0 transition-opacity"></div>
-      
-      <div id="cartDrawer" class="absolute inset-x-0 bottom-0 max-w-[430px] mx-auto bg-white rounded-t-[32px] max-h-[92vh] flex flex-col shadow-2xl transform translate-y-full transition-transform duration-300 ease-out" style="padding-bottom: var(--sab);">
+    <section class="px-4 pt-4">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-[16px] font-extrabold">Главная</h2>
+            <button onclick="setCategory('all')" class="text-[11px] font-bold text-slate-400">Все модели</button>
+        </div>
+        <div id="category-pills" class="flex gap-3 overflow-x-auto hide-scrollbar pb-1"></div>
+    </section>
+
+    <section id="sync-error-banner" class="px-4 pt-3 hidden">
+        <div class="card p-3 flex items-center justify-between gap-2">
+            <p class="text-[11px] text-slate-500 leading-snug">Не удалось обновить каталог. Показаны сохранённые модели.</p>
+            <button onclick="loadCatalog(true)" class="w-8 h-8 rounded-xl bg-slate-100">↻</button>
+        </div>
+    </section>
+
+    <main id="products-container" class="p-4 grid grid-cols-2 gap-3"></main>
+</div>
+
+<nav class="nav">
+    <button onclick="openSearch()" class="flex flex-col items-center gap-0.5 text-[10px] font-bold text-slate-500">
+        <span class="text-lg">⌕</span>Поиск
+    </button>
+    <button onclick="showCheckout()" class="relative flex flex-col items-center gap-0.5 text-[10px] font-bold text-slate-500">
+        <span class="text-lg">▣</span>Корзина
+        <span id="cart-badge" class="hidden absolute top-0 right-[22%] min-w-[16px] h-4 px-1 rounded-full bg-[#E11D2E] text-white text-[9px] leading-4">0</span>
+    </button>
+    <button onclick="openParams()" class="flex flex-col items-center gap-0.5 text-[10px] font-bold text-slate-500">
+        <span class="text-lg">☰</span>Параметры
+    </button>
+    <a href="https://t.me/obuv_optom_rg" target="_blank" class="flex flex-col items-center gap-0.5 text-[10px] font-bold text-slate-500 no-underline">
+        <span class="text-lg">💬</span>Поддержка
+    </a>
+</nav>
+<button class="fab" onclick="showCheckout()" id="fab-cart" style="display:none">＋</button>
+
+<div id="toast" class="toast"><span id="toast-icon">📦</span> <span id="toast-text">Готово</span></div>
+<div id="lightbox-modal" class="fixed inset-0 z-[90] bg-black/90 flex items-center justify-center p-4 opacity-0 pointer-events-none" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" class="max-w-full max-h-[86vh] rounded-2xl" onclick="event.stopPropagation()">
+</div>
+
+<div id="search-sheet" class="sheet" onclick="if(event.target===this)closeSheets()">
+    <div class="sheet-panel p-4">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3"></div>
+        <input id="search-input" oninput="renderProducts()" placeholder="Модель, размер, сезон..." class="w-full h-11 rounded-2xl bg-slate-100 px-4 text-sm font-semibold outline-none">
+    </div>
+</div>
+<div id="params-sheet" class="sheet" onclick="if(event.target===this)closeSheets()">
+    <div class="sheet-panel px-4 pt-3 pb-5">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3"></div>
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-[18px] font-extrabold">Параметры</h3>
+            <button onclick="closeSheets()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500">✕</button>
+        </div>
+        <div class="space-y-4 max-h-[70vh] overflow-y-auto hide-scrollbar pr-0.5">
+            <div>
+                <div class="text-[12px] font-extrabold text-slate-500 mb-2">Сортировка</div>
+                <div class="flex flex-wrap gap-2" id="sort-chips"></div>
+            </div>
+            <div>
+                <div class="text-[12px] font-extrabold text-slate-500 mb-2">Сезон</div>
+                <div class="flex flex-wrap gap-2" id="season-chips"></div>
+            </div>
+            <div>
+                <div class="text-[12px] font-extrabold text-slate-500 mb-2">Размерный ряд</div>
+                <div class="flex flex-wrap gap-2" id="size-chips"></div>
+            </div>
+            <div>
+                <div class="text-[12px] font-extrabold text-slate-500 mb-2">Квант короба</div>
+                <div class="flex flex-wrap gap-2" id="qty-chips"></div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-3 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-[13px] font-extrabold">Только распродажа / скидки</div>
+                        <div class="text-[11px] text-slate-400 font-semibold">Хиты SALE и уценка</div>
+                    </div>
+                    <button id="sw-sale" type="button" class="switch" onclick="event.stopPropagation(); toggleDraft('saleOnly')"></button>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-[13px] font-extrabold">В наличии больше 5 коробов</div>
+                        <div class="text-[11px] text-slate-400 font-semibold">Без дефицита</div>
+                    </div>
+                    <button id="sw-stock" type="button" class="switch" onclick="event.stopPropagation(); toggleDraft('stock5')"></button>
+                </div>
+            </div>
+        </div>
+        <div class="pt-3 space-y-2">
+            <button type="button" onclick="event.stopPropagation(); applyFilters()" class="w-full h-12 rounded-2xl bg-[#111827] text-white font-extrabold">Применить фильтры</button>
+            <button type="button" onclick="event.stopPropagation(); resetFilters()" class="w-full h-10 text-[13px] font-bold text-slate-400">Сбросить всё</button>
+        </div>
+    </div>
+</div>
+
+<div id="margin-sheet" class="sheet" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet-panel p-4 space-y-3">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <div class="flex justify-between items-start">
+            <div>
+                <div class="text-[11px] font-extrabold text-violet-600">КАЛЬКУЛЯТОР МАРЖИ</div>
+                <h3 id="mg-title" class="font-extrabold leading-5">Модель</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('margin-sheet').classList.remove('open')" class="w-8 h-8 rounded-full bg-slate-100">✕</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="mg-tab-wb" onclick="setMgTab('wb')" class="h-10 rounded-xl bg-violet-600 text-white text-[12px] font-extrabold">Wildberries</button>
+            <button type="button" id="mg-tab-oz" onclick="setMgTab('ozon')" class="h-10 rounded-xl bg-slate-100 text-[12px] font-extrabold">Ozon</button>
+        </div>
+        <svg id="mg-chart" viewBox="0 0 280 70" class="w-full h-[70px] bg-violet-50 rounded-xl"></svg>
+        <div class="flex justify-between text-[11px] font-bold">
+            <span>Цена продажи</span>
+            <span id="mg-sell-label">0 ₽</span>
+        </div>
+        <input type="range" id="mg-slider" oninput="onMgSlider(this.value)">
+        <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="rounded-2xl bg-slate-50 p-2">
+                <div class="text-[9px] text-slate-400 font-bold">ОПТ ПАРЫ</div>
+                <div id="mg-opt" class="font-extrabold">0</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-2">
+                <div class="text-[9px] text-slate-400 font-bold">КОМИССИЯ</div>
+                <div id="mg-fee" class="font-extrabold">0%</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-2">
+                <div class="text-[9px] text-slate-400 font-bold">НА РУКИ С ПАРЫ</div>
+                <div id="mg-pair" class="font-extrabold text-emerald-600">0</div>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 p-2">
+                <div class="text-[9px] text-emerald-600 font-bold">С КОРОБА</div>
+                <div id="mg-box" class="font-extrabold text-emerald-700">0</div>
+            </div>
+        </div>
+        <p id="mg-hint" class="text-[11px] text-slate-400 font-semibold"></p>
+        <button type="button" onclick="openProductModal(currentModalId); document.getElementById('margin-sheet').classList.remove('open')" class="w-full h-11 rounded-2xl bg-[#111827] text-white font-extrabold">К модели</button>
+    </div>
+</div>
+
+<div id="video-sheet" class="sheet" onclick="if(event.target===this)closeVideoReview()">
+    <div class="sheet-panel p-4 space-y-3 bg-black text-white">
+        <div class="flex justify-between items-center">
+            <b>Видеообзор партии • 15 сек</b>
+            <button type="button" onclick="closeVideoReview()" class="w-8 h-8 rounded-full bg-white/10">✕</button>
+        </div>
+        <video id="review-video" class="w-full rounded-2xl bg-black" controls playsinline poster="https://i.postimg.cc/1nH2mkw6/6122.jpg">
+            <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+        </video>
+        <p class="text-[11px] text-slate-300">Живой обзор короба с рынка. Если ролик не играет — откройте из Telegram.</p>
+    </div>
+</div>
+
+<!-- МОДАЛКА ТОВАРА -->
+<div id="product-modal" class="sheet">
+    <div class="sheet-panel p-4 space-y-3" id="product-sheet">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <div class="flex justify-between items-start">
+            <span id="modal-badge" class="text-[10px] font-extrabold text-[#E11D2E]"></span>
+            <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-slate-100">✕</button>
+        </div>
+        <div class="relative h-64 rounded-2xl overflow-hidden bg-slate-100" onclick="openLightbox()">
+            <img id="modal-main-img" src="" class="w-full h-full object-cover">
+            <span id="modal-stock-badge" class="stock-badge absolute top-2 right-2 bg-black/70 text-white text-[10px] font-extrabold px-2 py-1 rounded-lg"></span>
+        </div>
+        <div id="modal-thumbnails" class="flex gap-2 overflow-x-auto hide-scrollbar"></div>
+        <button type="button" id="video-review-btn" onclick="openVideoReview()" class="w-full h-11 rounded-2xl bg-black/80 text-white text-[12px] font-extrabold flex items-center justify-center gap-2">
+            ▶ Смотреть живой видеообзор партии (15 сек)
+        </button>
+        <a id="media-pack-btn" href="#" onclick="event.preventDefault(); downloadMediaPack(currentModalId)" class="w-full h-11 rounded-2xl bg-white border border-slate-200 text-[12px] font-extrabold text-slate-800 flex items-center justify-center gap-2">
+            📥 Скачать медиа-пак для Авито и Telegram (фото в HD)
+        </a>
+        <h2 id="modal-title" class="text-base font-extrabold leading-snug"></h2>
         
-        <div class="pt-2.5 pb-1 flex justify-center cursor-pointer" onclick="closeCart()">
-          <div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+        <!-- Рейтинг в модалке -->
+        <div class="flex items-center gap-2" id="modal-rating-badge"></div>
+
+        <div class="flex gap-3 text-[12px] font-bold">
+            <span id="modal-pair-price" class="text-emerald-600"></span>
+            <span id="modal-box-price" class="text-[#E11D2E]"></span>
         </div>
-
-        <div class="px-4 pb-2.5 flex items-center justify-between border-b border-slate-100">
-          <div>
-            <h2 class="text-base font-black text-slate-900 leading-none">Оптовая накладная</h2>
-            <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Сборка: Салют 23.03</p>
-          </div>
-          <button onclick="closeCart()" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center tap-press">
-            <i data-lucide="x" class="w-3.5 h-3.5 text-slate-600"></i>
-          </button>
+        <div id="modal-rostovka" class="text-[11px] leading-4 text-slate-500 bg-slate-100 rounded-xl px-2.5 py-2"></div>
+        <div id="modal-margin" class="margin-chip rounded-xl px-2.5 py-2 text-[11px] leading-4 text-emerald-800 font-bold"></div>
+        <button type="button" id="mg-open-btn" onclick="toggleModalMargin()" class="w-full h-11 rounded-2xl bg-violet-600 text-white text-[12px] font-extrabold">МАРЖИНАЛЬНОСТЬ WB / OZON</button>
+        <div id="modal-mg-box" class="hidden rounded-2xl border border-violet-100 bg-violet-50 p-3 space-y-2">
+            <div class="grid grid-cols-2 gap-1 mb-1">
+                <button type="button" id="mm-tab-wb" onclick="setModalMgTab('wb')" class="h-9 rounded-xl bg-violet-600 text-white text-[11px] font-extrabold">Wildberries</button>
+                <button type="button" id="mm-tab-oz" onclick="setModalMgTab('ozon')" class="h-9 rounded-xl bg-white text-[11px] font-extrabold">Ozon</button>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="text-[12px] font-extrabold text-violet-900">График прибыли</div>
+                <span id="wb-net" class="text-[11px] font-extrabold text-violet-700"></span>
+            </div>
+            <svg id="wb-chart" viewBox="0 0 280 64" class="w-full h-16"></svg>
+            <div class="flex justify-between text-[10px] font-bold text-violet-400">
+                <span>дешево</span><span>график прибыли с пары</span><span>дорого</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-bold text-slate-500">Цена на WB</span>
+                <b id="wb-price-label" class="text-[12px] text-violet-800">0 ₽</b>
+            </div>
+            <input type="range" id="wb-slider" min="400" max="4000" step="10" oninput="onWbSlider(this.value)">
+            <div class="grid grid-cols-3 gap-1 text-center">
+                <div class="rounded-xl bg-white p-1.5"><div class="text-[9px] text-slate-400 font-bold">ОПТ</div><div id="wb-opt" class="text-[11px] font-extrabold">0</div></div>
+                <div class="rounded-xl bg-white p-1.5"><div id="wb-fee-label" class="text-[9px] text-slate-400 font-bold">WB −30%</div><div id="wb-after" class="text-[11px] font-extrabold">0</div></div>
+                <div class="rounded-xl bg-white p-1.5"><div class="text-[9px] text-slate-400 font-bold">ЧИСТЫМИ</div><div id="wb-clean" class="text-[11px] font-extrabold text-emerald-600">0</div></div>
+            </div>
         </div>
-
-        <!-- Тело корзины -->
-        <div class="overflow-y-auto px-4 py-3 space-y-3 flex-1 hide-scrollbar">
-          <div id="cartItemsList" class="space-y-2.5">
-            <!-- Список JS -->
-          </div>
-
-          <!-- Математика коробов -->
-          <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 space-y-1.5 text-xs">
-            <div class="flex justify-between text-slate-600">
-              <span>Всего коробок:</span>
-              <span id="modalTotalBoxes" class="font-bold text-slate-900">0 шт.</span>
-            </div>
-            <div class="flex justify-between text-slate-600">
-              <span>Всего пар обуви:</span>
-              <span id="modalTotalPairs" class="font-bold text-slate-900">0 пар</span>
-            </div>
-            <div class="h-px bg-slate-200 my-1"></div>
-            <div class="flex justify-between text-sm font-black text-slate-900">
-              <span>ИТОГО К ОПЛАТЕ:</span>
-              <span id="modalTotalPrice" class="text-base font-black text-red-600">0 ₽</span>
-            </div>
-          </div>
-
-          <!-- Маркировка на коробку -->
-          <div class="space-y-2.5">
-            <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">
-                Маркировка на коробку маркером *
-              </label>
-              <input type="text" id="orderClientName" placeholder="Например: АНЯ САМАРА (напишут на тюке)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none">
-            </div>
-
-            <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">
-                Телефон или ник в Telegram *
-              </label>
-              <input type="text" id="orderContact" placeholder="+7 (999) 000-00-00 или @username" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold outline-none">
-            </div>
-
-            <div>
-              <label class="block text-[10px] font-black text-slate-700 uppercase mb-1">Способ отправки</label>
-              <select id="deliveryMethod" onchange="toggleBusFields(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none">
-                <option value="bus">Автобус со стоянки Садовода</option>
-                <option value="tk">Транспортная компания (СДЭК / ПЭК / КИТ)</option>
-                <option value="pickup">Самовывоз (Салют 23.03)</option>
-              </select>
-            </div>
-
-            <div id="busFieldsGroup" class="grid grid-cols-2 gap-2">
-              <input type="text" id="busParking" placeholder="Стоянка 7" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold outline-none">
-              <input type="text" id="busNumber" placeholder="Дагестан 05 / 412" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold outline-none">
-            </div>
-
-            <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 flex items-start space-x-2">
-              <i data-lucide="credit-card" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5"></i>
-              <p class="text-[10px] text-amber-900 leading-tight">
-                <strong>Оплата на карту:</strong> Номер карты для перевода менеджер павильона Салют 23.03 отправит вам в личные сообщения после проверки наличия на складе.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-3 border-t border-slate-100 bg-white">
-          <button onclick="submitOrder()" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black text-xs shadow-lg flex items-center justify-center space-x-2 tap-press">
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-            <span>ОТПРАВИТЬ ЗАКАЗ НА САЛЮТ 23.03</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- МОДАЛКА УСПЕХА -->
-    <div id="successModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/70 backdrop-blur-sm hidden">
-      <div class="bg-white rounded-3xl p-5 w-full max-w-xs text-center shadow-2xl">
-        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2.5">
-          <i data-lucide="check" class="w-6 h-6 stroke-[3]"></i>
-        </div>
-        <h3 class="text-base font-black text-slate-900">Заказ отправлен!</h3>
-        <p class="text-[11px] text-slate-500 mt-1">
-          Менеджер точки <b>Салют 23.03</b> отправил карту для оплаты в личные сообщения.
-        </p>
-        <div class="bg-slate-50 rounded-xl p-2.5 my-3 text-[11px] text-left space-y-1">
-          <div class="flex justify-between">
-            <span class="text-slate-500">Маркировка:</span>
-            <span id="successClientMark" class="font-black text-slate-900">—</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">Партия:</span>
-            <span id="successTotalSum" class="font-black text-red-600">—</span>
-          </div>
-        </div>
-        <button onclick="closeSuccessModal()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs tap-press">
-          В каталог
-        </button>
-      </div>
-    </div>
-
-    <!-- МОДАЛКА PWA -->
-    <div id="pwaModal" class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/70 backdrop-blur-sm hidden">
-      <div class="bg-white rounded-3xl p-5 w-full max-w-xs text-center shadow-2xl">
-        <div class="w-10 h-10 bg-slate-900 text-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-2.5">
-          <i data-lucide="smartphone" class="w-5 h-5"></i>
-        </div>
-        <h3 class="font-black text-xs text-slate-900">Иконка на экран телефона</h3>
-        <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-          Чтобы открывать витрину как отдельное приложение (как WhatsApp):
-        </p>
-        <div class="text-left text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-xl my-2.5 space-y-1.5">
-          <p>1. Нажмите <b>три точки (⋮)</b> вверху Telegram.</p>
-          <p>2. Выберите <b>«Добавить на экран “Домой”»</b>.</p>
-          <p>3. Ярлык «RG Обувь» появится на рабочем столе телефона.</p>
-        </div>
-        <button onclick="closePwaModal()" class="w-full bg-slate-100 text-slate-800 font-bold py-2 rounded-xl text-xs">
-          Закрыть
-        </button>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.expand();
-      tg.ready();
-    }
-
-    function haptic(type = 'light') {
-      if (tg?.HapticFeedback) {
-        if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
-        else tg.HapticFeedback.impactOccurred(type);
-      }
-    }
-
-    let activeGender = 'all';
-    let activeSubCat = 'Все';
-    let searchQuery = '';
-
-    const subCats = ["Все", "Зимняя обувь", "Кроссовки", "Тапочки", "Босоножки", "Ликвидация"];
-
-    const products = [
-      {
-        id: "p1",
-        art: "6122",
-        name: "Зимние ботинки Dino Albat",
-        gender: "women",
-        category: "Зимняя обувь",
-        seller: "Салют (Равшан)",
-        pairPrice: 550,
-        boxPairs: 8,
-        sizes: "36–41 (по 2 пары)",
-        img: "https://images.unsplash.com/photo-1543508282-6319a3e2621f?auto=format&fit=crop&w=400&q=80"
-      },
-      {
-        id: "p2",
-        art: "0142",
-        name: "Кроссовки Winter Fur теплые",
-        gender: "men",
-        category: "Кроссовки",
-        seller: "Склад 2 (Андрей)",
-        pairPrice: 500,
-        boxPairs: 8,
-        sizes: "41–45 (8 пар)",
-        img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=400&q=80"
-      },
-      {
-        id: "p3",
-        art: "0214",
-        name: "Распродажа кроссовки демисезон",
-        gender: "men",
-        category: "Ликвидация",
-        seller: "Салют (Равшан)",
-        pairPrice: 225,
-        boxPairs: 8,
-        sizes: "40–45 (маломерки)",
-        img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80"
-      },
-      {
-        id: "p4",
-        art: "2026",
-        name: "Туфли Fashion NEW-2026",
-        gender: "women",
-        category: "Босоножки",
-        seller: "Склад 3 (Надя)",
-        pairPrice: 1300,
-        boxPairs: 8,
-        sizes: "36–40 (8 пар)",
-        img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=400&q=80"
-      },
-      {
-        id: "p5",
-        art: "0891",
-        name: "Тапочки домашние Cozy Wool",
-        gender: "women",
-        category: "Тапочки",
-        seller: "Салют (Равшан)",
-        pairPrice: 180,
-        boxPairs: 10,
-        sizes: "36–41 (10 пар)",
-        img: "https://images.unsplash.com/photo-1582588678413-dbf45f4823e9?auto=format&fit=crop&w=400&q=80"
-      },
-      {
-        id: "p6",
-        art: "4410",
-        name: "Кроссовки детские Active",
-        gender: "kids",
-        category: "Кроссовки",
-        seller: "Склад 2 (Андрей)",
-        pairPrice: 400,
-        boxPairs: 8,
-        sizes: "31–36 (8 пар)",
-        img: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=400&q=80"
-      }
-    ];
-
-    let cart = {};
-
-    function renderSubCats() {
-      const bar = document.getElementById("subCatsBar");
-      bar.innerHTML = subCats.map(cat => {
-        const isActive = cat === activeSubCat;
-        return `
-          <button onclick="setSubCat('${cat}')" class="whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-bold transition tap-press ${
-            isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600'
-          }">
-            ${cat}
-          </button>
-        `;
-      }).join('');
-    }
-
-    function setSubCat(cat) {
-      haptic('light');
-      activeSubCat = cat;
-      renderSubCats();
-      renderProducts();
-    }
-
-    function setGender(gender) {
-      haptic('light');
-      activeGender = gender;
-      document.querySelectorAll(".gender-btn").forEach(btn => {
-        if (btn.getAttribute("data-gender") === gender) {
-          btn.className = "gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-900 text-white shadow-sm";
-        } else {
-          btn.className = "gender-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold transition tap-press bg-slate-100 text-slate-600";
-        }
-      });
-      renderProducts();
-    }
-
-    function switchSector(sec) {
-      haptic('medium');
-      if (sec !== 'shoes') {
-        alert("Разделы «Одежда» и «1000 мелочей» запускаются на 2 этапе!");
-      }
-    }
-
-    function handleSearch(val) {
-      searchQuery = val.toLowerCase().trim();
-      renderProducts();
-    }
-
-    function renderProducts() {
-      const grid = document.getElementById("productsGrid");
-      const filtered = products.filter(p => {
-        const mG = activeGender === 'all' || p.gender === activeGender;
-        const mC = activeSubCat === 'Все' || p.category === activeSubCat;
-        const mS = p.name.toLowerCase().includes(searchQuery) || p.art.includes(searchQuery);
-        return mG && mC && mS;
-      });
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-2 py-12 text-center text-slate-400">
-            <i data-lucide="package-search" class="w-8 h-8 mx-auto mb-1 opacity-40"></i>
-            <p class="text-xs font-bold">Нет моделей в наличии</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      grid.innerHTML = filtered.map(p => {
-        const boxTotal = p.pairPrice * p.boxPairs;
-        const qty = cart[p.id] || 0;
-
-        return `
-          <div class="bg-white rounded-2xl p-2 shadow-[0_4px_16px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col justify-between">
-            <div>
-              <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-100 mb-1.5">
-                <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover">
-                <span class="absolute top-1.5 left-1.5 bg-slate-900/80 backdrop-blur-md text-white text-[8px] font-black px-1.5 py-0.5 rounded">
-                  арт. ${p.art}
-                </span>
-                <span class="absolute bottom-1.5 left-1.5 bg-white/90 backdrop-blur-md text-slate-700 text-[7px] font-bold px-1 py-0.5 rounded">
-                  ${p.seller}
-                </span>
-              </div>
-
-              <h3 class="text-[11px] font-black text-slate-900 leading-snug line-clamp-2">${p.name}</h3>
-              <p class="text-[9px] text-slate-400 font-medium mt-0.5">${p.sizes}</p>
-
-              <div class="mt-1.5 pt-1.5 border-t border-slate-50">
-                <div class="flex items-baseline justify-between">
-                  <span class="text-xs font-black text-slate-900">${boxTotal.toLocaleString('ru-RU')} ₽</span>
-                  <span class="text-[9px] font-bold text-slate-400">короб</span>
+        <p id="modal-sizes" class="text-[12px] text-slate-500 font-semibold"></p>
+        <p id="modal-desc" class="text-[12px] text-slate-500"></p>
+        <div id="honest-sign" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] font-bold text-emerald-800">🛡 Маркировка «Честный Знак» (DataMatrix) в комплекте</div>
+        
+        <!-- БЛОК ОТЗЫВОВ ОПТОВИКОВ -->
+        <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-[13px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <span>💬 Отзывы байеров</span>
+                        <span id="reviews-count-badge" class="text-[11px] bg-red-100 text-[#E11D2E] font-black px-1.5 py-0.2 rounded-md">0</span>
+                    </h3>
+                    <p class="text-[10px] text-slate-400 font-medium">Реальные выкупы оптом с Садовода</p>
                 </div>
-                <div class="flex items-center justify-between text-[9px] text-slate-500 font-medium">
-                  <span>${p.pairPrice} ₽/пара</span>
-                  <span class="text-emerald-600 font-bold">${p.boxPairs} пар</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-2">
-              ${qty === 0 ? `
-                <button onclick="changeQty('${p.id}', 1)" class="w-full bg-slate-900 text-white py-1.5 rounded-xl text-[11px] font-black flex items-center justify-center space-x-1 tap-press">
-                  <i data-lucide="plus" class="w-3 h-3"></i>
-                  <span>В коробку</span>
+                <button type="button" onclick="openAddReviewModal()" class="h-7 px-2.5 rounded-lg bg-slate-900 text-white text-[10px] font-extrabold hover:bg-black transition">
+                    + Написать
                 </button>
-              ` : `
-                <div class="flex items-center justify-between bg-slate-100 rounded-xl p-1">
-                  <button onclick="changeQty('${p.id}', -1)" class="w-6 h-6 bg-white rounded-lg flex items-center justify-center font-black text-slate-700 tap-press">-</button>
-                  <div class="text-center leading-none">
-                    <span class="text-[11px] font-black text-slate-900">${qty} кор.</span>
-                  </div>
-                  <button onclick="changeQty('${p.id}', 1)" class="w-6 h-6 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black tap-press">+</button>
-                </div>
-              `}
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      lucide.createIcons();
-    }
-
-    function changeQty(prodId, delta) {
-      haptic('light');
-      const cur = cart[prodId] || 0;
-      const next = cur + delta;
-      if (next <= 0) delete cart[prodId];
-      else cart[prodId] = next;
-
-      renderProducts();
-      updateCartBar();
-      if (!document.getElementById("cartModal").classList.contains("opacity-0")) {
-        renderCartModal();
-      }
-    }
-
-    function updateCartBar() {
-      let totalBoxes = 0;
-      let totalPairs = 0;
-      let totalPrice = 0;
-
-      for (const [id, count] of Object.entries(cart)) {
-        const p = products.find(prod => prod.id === id);
-        if (p) {
-          totalBoxes += count;
-          totalPairs += count * p.boxPairs;
-          totalPrice += count * (p.boxPairs * p.pairPrice);
-        }
-      }
-
-      const bar = document.getElementById("bottomCartBar");
-      if (totalBoxes > 0) {
-        document.getElementById("badgeCount").innerText = totalBoxes;
-        document.getElementById("barBoxes").innerText = `${totalBoxes} кор.`;
-        document.getElementById("barPairs").innerText = `${totalPairs} пар обуви`;
-        document.getElementById("barTotal").innerText = `${totalPrice.toLocaleString('ru-RU')} ₽`;
-        bar.classList.remove("translate-y-36");
-      } else {
-        bar.classList.add("translate-y-36");
-        closeCart();
-      }
-    }
-
-    function openCart() {
-      haptic('medium');
-      renderCartModal();
-      document.getElementById("cartModal").classList.remove("pointer-events-none", "opacity-0");
-      document.getElementById("cartDrawer").classList.remove("translate-y-full");
-    }
-
-    function closeCart() {
-      document.getElementById("cartDrawer").classList.add("translate-y-full");
-      document.getElementById("cartModal").classList.add("opacity-0");
-      setTimeout(() => document.getElementById("cartModal").classList.add("pointer-events-none"), 300);
-    }
-
-    function renderCartModal() {
-      const list = document.getElementById("cartItemsList");
-      let totalBoxes = 0;
-      let totalPairs = 0;
-      let totalPrice = 0;
-
-      const itemsHtml = Object.entries(cart).map(([id, count]) => {
-        const p = products.find(prod => prod.id === id);
-        if (!p) return '';
-        const itemPairs = count * p.boxPairs;
-        const itemSum = itemPairs * p.pairPrice;
-
-        totalBoxes += count;
-        totalPairs += itemPairs;
-        totalPrice += itemSum;
-
-        return `
-          <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
-            <div class="flex items-center space-x-2">
-              <img src="${p.img}" class="w-10 h-10 object-cover rounded-lg bg-white">
-              <div>
-                <h4 class="text-[11px] font-black text-slate-900 leading-tight">${p.name}</h4>
-                <p class="text-[9px] text-slate-500">${count} кор. × ${p.boxPairs} = ${itemPairs} пар × ${p.pairPrice} ₽</p>
-                <p class="text-xs font-black text-slate-900">${itemSum.toLocaleString('ru-RU')} ₽</p>
-              </div>
             </div>
             
-            <div class="flex items-center space-x-1 bg-white rounded-lg p-1 shadow-sm border border-slate-100">
-              <button onclick="changeQty('${p.id}', -1)" class="w-5 h-5 flex items-center justify-center font-bold text-slate-700 tap-press">-</button>
-              <span class="text-xs font-black text-slate-900 px-1">${count}</span>
-              <button onclick="changeQty('${p.id}', 1)" class="w-5 h-5 flex items-center justify-center font-bold text-slate-900 tap-press">+</button>
+            <div id="modal-reviews-list" class="space-y-2.5 max-h-48 overflow-y-auto hide-scrollbar">
+                <!-- Генерируется из JS -->
             </div>
-          </div>
-        `;
-      }).join('');
+        </div>
 
-      list.innerHTML = itemsHtml;
-      document.getElementById("modalTotalBoxes").innerText = `${totalBoxes} шт.`;
-      document.getElementById("modalTotalPairs").innerText = `${totalPairs} пар`;
-      document.getElementById("modalTotalPrice").innerText = `${totalPrice.toLocaleString('ru-RU')} ₽`;
+        <div class="card p-3 space-y-2">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="text-sm font-extrabold">Партия коробов</div>
+                    <div class="text-[11px] text-slate-400">В 1 коробе = размерный ряд</div>
+                </div>
+                <input type="number" id="slider-number-input" class="w-16 h-9 text-center rounded-xl bg-slate-100 font-extrabold" oninput="onNumberInputChange(this.value)">
+            </div>
+            <input type="range" id="modal-slider" oninput="onSliderChange(this.value)">
+            <div class="flex justify-between text-[12px] font-bold">
+                <span>Пар: <b id="modal-calc-pairs">8</b></span>
+                <span id="modal-calc-total" class="text-[#E11D2E]">0 ₽</span>
+            </div>
+        </div>
+        <div id="volume-bar" class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-2">
+            <div class="text-[11px] font-extrabold text-slate-500">Скидка за объём</div>
+            <div class="h-2 rounded-full bg-slate-200 overflow-hidden"><div id="volume-fill" class="h-full bg-[#E11D2E] transition-all duration-300" style="width:20%"></div></div>
+            <div id="volume-tiers" class="grid grid-cols-3 gap-1"></div>
+        </div>
+        <div id="reserve-box" class="rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2.5 flex items-center gap-2">
+            <span class="text-lg">⏱</span>
+            <div>
+                <div class="text-[11px] font-extrabold text-amber-800">Бронь фиксируется до оплаты</div>
+                <div id="reserve-timer" class="text-[15px] font-extrabold text-amber-600 font-mono">01:59:59</div>
+            </div>
+        </div>
+        <div id="modal-action-slot"></div>
+    </div>
+</div>
+
+<!-- МОДАЛКА ДОБАВЛЕНИЯ ОТЗЫВА -->
+<div id="add-review-sheet" class="sheet" onclick="if(event.target===this)closeAddReviewModal()">
+    <div class="sheet-panel p-4 space-y-3" style="height: auto; max-height: 85vh;">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+            <h3 class="text-sm font-extrabold text-slate-900">Оставить отзыв оптовика</h3>
+            <button onclick="closeAddReviewModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs">✕</button>
+        </div>
+        
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">Ваше имя / Магазин *</label>
+            <input id="rev-name" placeholder="Например: Руслан Опт (Махачкала)" class="w-full h-10 rounded-xl bg-slate-100 px-3 text-xs font-semibold outline-none">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1">Город поставки *</label>
+                <input id="rev-city" placeholder="Казань / Пятигорск" class="w-full h-10 rounded-xl bg-slate-100 px-3 text-xs font-semibold outline-none">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1">Выкуплено коробок</label>
+                <input id="rev-boxes" type="number" value="4" class="w-full h-10 rounded-xl bg-slate-100 px-3 text-xs font-semibold outline-none">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">Оценка модели</label>
+            <div class="flex gap-2" id="rev-star-rating">
+                <button type="button" onclick="setRevStars(5)" class="text-lg text-amber-400">★★★★★</button>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">Текст отзыва *</label>
+            <textarea id="rev-text" placeholder="Как качество обуви? Как быстро ушла ростовка? Все ли коробки доехали целыми?" class="w-full h-20 rounded-xl bg-slate-100 p-3 text-xs font-semibold outline-none resize-none"></textarea>
+        </div>
+
+        <button type="button" onclick="submitReview()" class="w-full h-11 rounded-xl bg-[#E11D2E] text-white font-extrabold text-xs shadow-md">
+            Опубликовать отзыв
+        </button>
+    </div>
+</div>
+
+<div id="checkout-form" class="sheet">
+    <div class="sheet-panel p-4 space-y-3" id="checkout-sheet">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="font-extrabold">Корзина</h2>
+                <p class="text-[11px] text-slate-400">ТЦ Салют, место 2-3-01</p>
+            </div>
+            <button type="button" onclick="clearCartAndClose()" class="h-8 px-3 rounded-full bg-slate-100 text-[11px] font-extrabold text-slate-500">Отмена</button>
+        </div>
+        <div id="checkout-cart-items" class="space-y-2 max-h-36 overflow-auto"></div>
+        <div id="checkout-pairs" class="text-[11px] text-slate-400 font-semibold"></div>
+        <input id="buyer-company" placeholder="ФИО байера или канал *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        <input id="buyer-contacts" placeholder="Телефон *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+
+        <div class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wide">Доставка</div>
+        <div class="grid grid-cols-1 gap-2">
+            <button type="button" id="ship-bus" onclick="setShip('bus')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">1. Рейсовый автобус (Садовод / ТЯК Люблино)</button>
+            <button type="button" id="ship-cdek" onclick="setShip('cdek')" class="ship-opt active rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">2. СДЭК</button>
+            <button type="button" id="ship-tk" onclick="setShip('tk')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">3. ТК (ПЭК / Деловые Линии / КИТ)</button>
+            <button type="button" id="ship-pickup" onclick="setShip('pickup')" class="ship-opt rounded-2xl px-3 py-2.5 text-left text-[13px] font-bold">4. Самовывоз со склада (Линия 2-3-01)</button>
+        </div>
+        <div id="cdek-fields" class="space-y-2">
+            <input id="buyer-city" placeholder="Город назначения *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+            <input id="cdek-pvz" placeholder="Адрес ПВЗ СДЭК *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        </div>
+        <div id="tk-fields" class="hidden space-y-2">
+            <select id="buyer-tk-extra" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+                <option>ПЭК</option>
+                <option>Деловые Линии</option>
+                <option>КИТ</option>
+            </select>
+            <input id="tk-city" placeholder="Город получателя *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+            <input id="tk-fio" placeholder="ФИО получателя *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+            <input id="tk-doc" placeholder="Серия/номер паспорта или ИНН *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
+        </div>
+        <div id="bus-fields" class="bus-fields space-y-2">
+            <input id="bus-city" placeholder="Город назначения *" class="w-full h-11 rounded-2xl bg-amber-50 border border-amber-200 px-3 text-sm font-semibold">
+            <input id="bus-stand" placeholder="Номер стоянки на рынке *" class="w-full h-11 rounded-2xl bg-amber-50 border border-amber-200 px-3 text-sm font-semibold">
+            <input id="bus-plate" placeholder="Номер автобуса / телефон водителя *" class="w-full h-11 rounded-2xl bg-amber-50 border border-amber-200 px-3 text-sm font-semibold">
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <b class="text-[13px]">Оплата СБП</b>
+                <span class="text-[10px] font-extrabold text-emerald-600">АЛЬФА-БАНК</span>
+            </div>
+            <div class="flex gap-3 items-center">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://qr.nspk.ru/79175368940" alt="QR СБП" class="w-20 h-20 rounded-xl bg-white border">
+                <div class="min-w-0">
+                    <div class="text-[12px] font-extrabold">+7 917 536-89-40</div>
+                    <div class="text-[10px] text-slate-400">Альфа-Банк / Равшан</div>
+                    <button type="button" onclick="copySbp()" class="mt-1 h-8 px-3 rounded-lg bg-slate-900 text-white text-[10px] font-extrabold">Скопировать номер</button>
+                </div>
+            </div>
+            <label class="block text-[11px] font-bold text-slate-500">📎 Прикрепить скриншот чека об оплате</label>
+            <input id="receipt-file" type="file" accept="image/*" class="w-full text-[11px]">
+        </div>
+
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold">Итого</span>
+            <span id="checkout-total" class="text-lg font-extrabold text-[#E11D2E]">0 ₽</span>
+        </div>
+        <button id="order-submit-btn" onclick="sendOrderToBot()" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">Подтвердить заказ и отправить на склад</button>
+        <div id="order-fallback" class="hidden rounded-2xl bg-amber-50 p-3 text-[11px] text-amber-800">
+            <textarea id="order-fallback-text" class="w-full h-24 bg-transparent outline-none"></textarea>
+            <button onclick="copyFallbackOrder()" class="mt-2 w-full h-10 rounded-xl bg-amber-400 font-extrabold">СКОПИРОВАТЬ ЗАЯВКУ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+try { tg.ready(); tg.expand(); } catch (e) {}
+const API_BASE_URL = 'https://federal-hardening-sappy.ngrok-free.dev';
+const PRODUCTS_ENDPOINT = API_BASE_URL ? API_BASE_URL + '/api/products' : null;
+const WA_LINK = 'https://wa.me/79175368940';
+const TG_CHANNEL = 'https://t.me/obuv_optom_rg';
+const TG_MANAGER = 'https://t.me/Ravshan_rg';
+const PHONE_TEL = 'tel:+79175368940';
+const PHONE_TEXT = '+7 917 536-89-40';
+
+// БАЗОВЫЕ ОТЗЫВЫ ОПТОВИКОВ ДЛЯ ТОВАРОВ
+const INITIAL_REVIEWS = {
+    'shoe_sale_demi_autumn': [
+        { author: 'Мурад Опт', city: 'Махачкала', boxes: 6, rating: 5, date: 'Вчера', text: 'За 1800₽ короб — подарок. Маломерят на размер, но клиентам сразу сказали, улетели за два дня на рынке.' },
+        { author: 'Евгений', city: 'Воронеж', boxes: 3, rating: 5, date: '3 дня назад', text: 'Подростковые ходовые, ростовка 32-37 полная. Водитель со стоянки 12 забрал без проблем.' }
+    ],
+    'shoe_new_2026_pumps': [
+        { author: 'Саида Мода', city: 'Грозный', boxes: 10, rating: 5, date: 'Сегодня', text: 'Туфли вживую смотрятся дорого, подошва аккуратная, клея нет. Каждая пара в фирменной коробке.' },
+        { author: 'Ирина WB', city: 'Екатеринбург', boxes: 8, rating: 5, date: '25 сент.', text: 'Загрузили на склад WB в Коледино, первая партия уже раскуплена, маржа отличная.' }
+    ],
+    'shoe_winter_dino_albat': [
+        { author: 'Арсен', city: 'Пятигорск', boxes: 12, rating: 5, date: 'Вчера', text: 'Шерсть реально густая и теплая. На Садоводе у Равшана всегда забираем зиму, сборка четкая за 2 часа.' },
+        { author: 'Алексей С.', city: 'Самара', boxes: 5, rating: 5, date: '24 сент.', text: 'Ботинки пушка. Автобус со стоянки 7 ушел в тот же вечер, уже на витрине.' }
+    ]
+};
+
+const FALLBACK_PRODUCTS = [
+    { id: 'shoe_sale_demi_autumn', cat: 'Подростковая обувь', title: 'Распродажа Кроссовки демисезон', badge: 'SALE', rating: 4.9, sizes: '32, 33, 34(2), 35(2), 36, 37 — 8 пар', rostovka: '32(1) • 33(1) • 34(2) • 35(2) • 36(1) • 37(1)', desc: 'Маломерки. Люкс. Отгрузка коробом.', price_pair: 225, box_qty: 8, price_box: 1800, stock_boxes: 3, images: ['https://i.postimg.cc/d7ggNRvC/photo-2026-09-22-20-40-29.jpg','https://i.postimg.cc/5HDDK51F/photo-2026-09-22-20-40-30.jpg'] },
+    { id: 'shoe_new_2026_pumps', cat: 'Женская обувь', title: 'Женские туфли NEW-2026 Тренд №1', badge: 'ХИТ', rating: 5.0, sizes: '36-40 • 8 пар', rostovka: '36(1) • 37(2) • 38(2) • 39(2) • 40(1)', desc: '1300₽ пара. 8 пар в коробе.', price_pair: 1300, box_qty: 8, price_box: 10400, stock_boxes: 12, images: ['https://i.postimg.cc/34TQJjq6/42145.jpg','https://i.postimg.cc/Kk2hv7WW/photo-2026-09-22-22-03-30.jpg','https://i.postimg.cc/XGb67KP2/photo-2026-09-22-22-03-31.jpg'] },
+    { id: 'shoe_winter_dino_albat', cat: 'Зимняя обувь', title: 'Зимние ботинки Dino Albat шерсть', badge: 'ЗИМА', rating: 4.9, sizes: '36-41 • 8 пар', rostovka: '36(1) • 37(1) • 38(2) • 39(2) • 40(1) • 41(1)', desc: 'Натуральная шерсть. Каждая пара в коробке.', price_pair: 550, box_qty: 8, price_box: 4400, stock_boxes: 5, images: ['https://i.postimg.cc/1nH2mkw6/6122.jpg','https://i.postimg.cc/tZ5wqKWW/photo-2026-09-22-22-16-17.jpg'] }
+];
+let shoesProducts = [];
+let currentCat = 'all';
+let cart = {};
+let currentModalId = null;
+let favorites = [];
+let isLoadingCatalog = false;
+let shipMode = 'cdek';
+const FILTER_DEFAULT = { sort: 'popular', season: 'all', size: 'all', boxQty: 0, saleOnly: false, stock5: false };
+let filters = Object.assign({}, FILTER_DEFAULT);
+let draft = Object.assign({}, FILTER_DEFAULT);
+const SORT_OPTS = [['popular','Популярные'],['price_asc','Сначала дешевле'],['price_desc','Сначала дороже'],['new','Новинки']];
+const SEASON_OPTS = [['all','Все'],['demi','Демисезон'],['winter','Зима (шерсть/мех)'],['summer','Лето']];
+const SIZE_OPTS = [['all','Все'],['w','36–41 (Женские)'],['m','40–45 (Мужские)'],['k','31–36 (Подросток)']];
+const QTY_OPTS = [[0,'Все'],[6,'6 пар'],[8,'8 пар'],[10,'10 пар'],[12,'12 пар']];
+
+// Хранилище отзывов (localStorage)
+function getProductReviews(prodId) {
+    const saved = localStorage.getItem('rg_reviews_' + prodId);
+    if (saved) {
+        try { return JSON.parse(saved); } catch(e) {}
     }
+    return INITIAL_REVIEWS[prodId] || [
+        { author: 'Оптовик Садовод', city: 'Москва', boxes: 4, rating: 5, date: 'Недавно', text: 'Качество отличное, соответствие описанию 100%. Будем добирать еще коробки.' }
+    ];
+}
 
-    function toggleBusFields(val) {
-      const group = document.getElementById("busFieldsGroup");
-      if (val === "bus") group.classList.remove("hidden");
-      else group.classList.add("hidden");
+function saveProductReviews(prodId, list) {
+    localStorage.setItem('rg_reviews_' + prodId, JSON.stringify(list));
+}
+
+function roundTen(n) { return Math.round(n / 10) * 10; }
+function retailPair(p) { return Math.max(500, roundTen(p.price_pair * 2.2)); }
+function boxProfit(p) { return (retailPair(p) - p.price_pair) * p.box_qty; }
+function detectSeason(p) {
+    const s = ((p.cat || '') + ' ' + (p.title || '') + ' ' + (p.desc || '') + ' ' + (p.badge || '')).toLowerCase();
+    if (/зим|шерст|мех|albat|зима/.test(s)) return 'winter';
+    if (/лето|сланц|босонож/.test(s)) return 'summer';
+    if (/деми|осен|весн|распродаж/.test(s)) return 'demi';
+    return 'demi';
+}
+function sizeHits(p, mode) {
+    if (mode === 'all') return true;
+    const raw = (p.rostovka || '') + ' ' + (p.sizes || '');
+    const nums = [];
+    raw.replace(/(\d{2})/g, function (_, n) { nums.push(parseInt(n, 10)); return ''; });
+    if (!nums.length) {
+        const t = ((p.cat || '') + ' ' + (p.title || '')).toLowerCase();
+        if (mode === 'w') return /жен/.test(t);
+        if (mode === 'm') return /муж/.test(t);
+        if (mode === 'k') return /подрост/.test(t);
+        return true;
     }
-
-    function submitOrder() {
-      const clientName = document.getElementById("orderClientName").value.trim();
-      const contact = document.getElementById("orderContact").value.trim();
-
-      if (!clientName) {
-        alert("Укажите имя для надписи маркером на коробке!");
-        return;
-      }
-      if (!contact) {
-        alert("Укажите контакт для связи!");
-        return;
-      }
-
-      haptic('success');
-
-      let totalBoxes = 0;
-      let totalPairs = 0;
-      let totalPrice = 0;
-      const orderItems = [];
-
-      for (const [id, count] of Object.entries(cart)) {
-        const p = products.find(prod => prod.id === id);
-        if (p) {
-          const pairs = count * p.boxPairs;
-          const sum = pairs * p.pairPrice;
-          totalBoxes += count;
-          totalPairs += pairs;
-          totalPrice += sum;
-          orderItems.push({
-            seller: p.seller,
-            art: p.art,
-            name: p.name,
-            boxes: count,
-            pairs: pairs,
-            sum: sum
-          });
-        }
-      }
-
-      const orderPayload = {
-        hub: "Салют 23.03",
-        boxMarking: clientName,
-        contact: contact,
-        deliveryMethod: document.getElementById("deliveryMethod").value,
-        busParking: document.getElementById("busParking").value,
-        busNumber: document.getElementById("busNumber").value,
-        totalBoxes: totalBoxes,
-        totalPairs: totalPairs,
-        totalPrice: totalPrice,
-        items: orderItems
-      };
-
-      if (tg?.sendData) {
-        tg.sendData(JSON.stringify(orderPayload));
-      }
-
-      closeCart();
-      document.getElementById("successClientMark").innerText = clientName;
-      document.getElementById("successTotalSum").innerText = `${totalPrice.toLocaleString('ru-RU')} ₽`;
-      document.getElementById("successModal").classList.remove("hidden");
-
-      cart = {};
-      renderProducts();
-      updateCartBar();
+    const min = Math.min.apply(null, nums), max = Math.max.apply(null, nums);
+    if (mode === 'w') return min <= 41 && max >= 36 && min < 40;
+    if (mode === 'm') return max >= 40;
+    if (mode === 'k') return min <= 36;
+    return true;
+}
+function isSale(p) {
+    return /sale|распродаж|скидк|уценк/i.test((p.badge || '') + ' ' + (p.title || ''));
+}
+function isNew(p) {
+    return /new|хит|2026|новин/i.test((p.badge || '') + ' ' + (p.title || ''));
+}
+function renderFilterSheet() {
+    function chips(id, opts, key, numeric) {
+        const el = document.getElementById(id);
+        el.innerHTML = opts.map(function (pair) {
+            const v = pair[0], l = pair[1];
+            const on = String(draft[key]) === String(v);
+            return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-filter-key="' + key + '" data-filter-val="' + v + '" data-numeric="' + (numeric ? '1' : '0') + '">' + l + '</button>';
+        }).join('');
     }
+    chips('sort-chips', SORT_OPTS, 'sort', false);
+    chips('season-chips', SEASON_OPTS, 'season', false);
+    chips('size-chips', SIZE_OPTS, 'size', false);
+    chips('qty-chips', QTY_OPTS, 'boxQty', true);
+    document.getElementById('sw-sale').classList.toggle('on', !!draft.saleOnly);
+    document.getElementById('sw-stock').classList.toggle('on', !!draft.stock5);
+}
+function setDraft(key, val) { draft[key] = val; renderFilterSheet(); }
+function toggleDraft(key) { draft[key] = !draft[key]; renderFilterSheet(); }
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-filter-key]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const key = btn.getAttribute('data-filter-key');
+    let val = btn.getAttribute('data-filter-val');
+    if (btn.getAttribute('data-numeric') === '1') val = Number(val);
+    setDraft(key, val);
+});
+function applyFilters() { filters = Object.assign({}, draft); closeSheets(); renderProducts(); showToast('Фильтры применены', '✅'); }
+function resetFilters() {
+    draft = Object.assign({}, FILTER_DEFAULT);
+    filters = Object.assign({}, FILTER_DEFAULT);
+    renderFilterSheet(); renderProducts(); showToast('Фильтры сброшены', '📦');
+}
 
-    function closeSuccessModal() {
-      document.getElementById("successModal").classList.add("hidden");
-    }
-
-    function openPwaModal() {
-      haptic('light');
-      document.getElementById("pwaModal").classList.remove("hidden");
-    }
-
-    function closePwaModal() {
-      document.getElementById("pwaModal").classList.add("hidden");
-    }
-
-    renderSubCats();
+function sizePreview(p) {
+    const raw = p.rostovka || p.sizes || '';
+    const sizes = [];
+    raw.replace(/(\d{2})/g, function (_, n) { if (sizes.indexOf(n) < 0) sizes.push(n); return ''; });
+    return sizes.slice(0, 6).map(s => '<span class="size-dot">' + s + '</span>').join('') || '<span class="size-dot">8 пар</span>';
+}
+function toggleFav(id) {
+    const i = favorites.indexOf(id);
+    if (i >= 0) favorites.splice(i, 1); else favorites.push(id);
     renderProducts();
-  </script>
+    showToast(i >= 0 ? 'Убрано из избранного' : 'В избранном', '❤');
+}
+function pingModel(id) {
+    const p = shoesProducts.find(x => x.id === id);
+    const text = encodeURIComponent('Равшан, нужен короб: ' + (p ? p.title : '') + ' / ' + (p ? p.price_box : '') + ' ₽. RG Обувь.');
+    const url = 'https://t.me/Ravshan_rg?text=' + text;
+    try { if (tg && tg.openTelegramLink) { tg.openTelegramLink(url); return; } } catch (e) {}
+    window.open(url, '_blank');
+}
+function copyPrice(id) {
+    const p = shoesProducts.find(x => x.id === id); if (!p) return;
+    const msg = p.title + '\nКороб ' + p.price_box + ' ₽ / пара ' + p.price_pair + ' ₽\n' + formatRostovka(p) + '\nWA ' + PHONE_TEXT + '\n' + TG_CHANNEL;
+    if (navigator.clipboard) navigator.clipboard.writeText(msg);
+    showToast('Прайс модели скопирован', '📋');
+}
+function quickOrder(id, el) {
+    updateCartBoxes(id, cart[id] ? cart[id].qty_boxes : 1, el);
+    showCheckout();
+}
+function formatRostovka(p) {
+    if (p.rostovka) return 'Размеры в коробе: ' + p.rostovka;
+    const raw = String(p.sizes || '');
+    const parts = [];
+    raw.replace(/(\d{2})\s*(?:\((\d+)\))?/g, function (_, size, qty) {
+        parts.push(size + '(' + (qty || '1') + ')');
+        return '';
+    });
+    if (parts.length) return 'Размеры в коробе: ' + parts.join(' • ');
+    return 'Размеры в коробе: ' + (raw || 'уточняйте');
+}
+
+function normalizeProduct(p) {
+    const boxQty = p.box_qty || 8;
+    const pricePair = (typeof p.price_pair === 'number') ? p.price_pair : (p.price || 0);
+    const priceBox = (typeof p.price_box === 'number') ? p.price_box : pricePair * boxQty;
+    return {
+        id: p.id, cat: p.cat || 'Обувь', title: p.title || 'Без названия', badge: p.badge || 'NEW',
+        rating: p.rating || 4.9,
+        sizes: p.sizes || '', rostovka: p.rostovka || '', desc: p.desc || '',
+        price_pair: pricePair, box_qty: boxQty, price_box: priceBox,
+        stock_boxes: (typeof p.stock_boxes === 'number') ? p.stock_boxes : (p.stock || 0),
+        images: (Array.isArray(p.images) && p.images.length) ? p.images : ['https://placehold.co/400x400/e11d2e/fff?text=RG']
+    };
+}
+
+let reserveLeft = 7199;
+let reserveTimerId = null;
+function fmtHMS(s) {
+    const h = String(Math.floor(s/3600)).padStart(2,'0');
+    const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const sec = String(s%60).padStart(2,'0');
+    return h + ':' + m + ':' + sec;
+}
+
+function volumeTiers(p) {
+    const base = Number(p.price_box) || 0;
+    const t3 = Math.round(base * 0.955 / 50) * 50;
+    const t5 = Math.round(base * 0.898 / 50) * 50;
+    return [
+        { min: 1, price: base, label: '1 кор' },
+        { min: 3, price: t3 || base, label: '3 кор' },
+        { min: 5, price: t5 || base, label: '5 кор' }
+    ];
+}
+function boxUnitPrice(p, boxes) {
+    const tiers = volumeTiers(p);
+    let price = tiers[0].price;
+    tiers.forEach(function (t) { if (boxes >= t.min) price = t.price; });
+    return price;
+}
+function renderVolumeBar(p, boxes) {
+    const wrap = document.getElementById('volume-tiers');
+    const fill = document.getElementById('volume-fill');
+    if (!wrap || !p) return;
+    const tiers = volumeTiers(p);
+    let active = 0;
+    tiers.forEach(function (t, i) { if (boxes >= t.min) active = i; });
+    fill.style.width = ((active + 1) / tiers.length * 100) + '%';
+    wrap.innerHTML = tiers.map(function (t, i) {
+        const on = i === active;
+        return '<div class="rounded-xl px-1 py-1.5 text-center ' + (on ? 'bg-[#111827] text-white' : 'bg-white text-slate-500') + '">' +
+            '<div class="text-[10px] font-extrabold">' + t.label + '</div>' +
+            '<div class="text-[10px] font-bold">' + t.price.toLocaleString('ru-RU') + ' ₽</div></div>';
+    }).join('');
+}
+function downloadMediaPack(id) {
+    const p = shoesProducts.find(x => x.id === id) || shoesProducts.find(x => x.id === currentModalId);
+    if (!p) { showToast('Нет фото', '⚠️'); return; }
+    const first = (p.images && p.images[0]) || '';
+    if (first) {
+        const a = document.createElement('a');
+        a.href = first;
+        a.download = (p.id || 'rg') + '_hd.jpg';
+        a.target = '_blank';
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+    showToast('Медиа-пак: фото в HD', '📥');
+}
+function startReserveTimer() {
+    reserveLeft = 7200;
+    if (reserveTimerId) { clearInterval(reserveTimerId); reserveTimerId = null; }
+    function tick() {
+        const el = document.getElementById('reserve-timer');
+        if (el) el.textContent = fmtHMS(reserveLeft);
+        if (reserveLeft <= 0) {
+            if (reserveTimerId) { clearInterval(reserveTimerId); reserveTimerId = null; }
+            return;
+        }
+        reserveLeft -= 1;
+    }
+    tick();
+    reserveTimerId = setInterval(tick, 1000);
+}
+function openVideoReview() {
+    document.getElementById('video-sheet').classList.add('open');
+    const v = document.getElementById('review-video');
+    try { v.currentTime = 0; v.play(); } catch(e) {}
+}
+function closeVideoReview() {
+    const v = document.getElementById('review-video');
+    try { v.pause(); } catch(e) {}
+    document.getElementById('video-sheet').classList.remove('open');
+}
+function downloadPrice() {
+    try {
+        if (window.XLSX) {
+            const rows = [['ID','Модель','Категория','Пар в коробе','Цена пары','Цена короба','Остаток коробов','Ростовка']];
+            shoesProducts.forEach(p => rows.push([p.id,p.title,p.cat,p.box_qty,p.price_pair,p.price_box,p.stock_boxes,p.rostovka||p.sizes]));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Остатки RG');
+            XLSX.writeFile(wb, 'RG_ostatki.xlsx');
+        }
+    } catch (e) {}
+    showToast('Прайс-лист сформирован и отправлен в чат', '📥');
+}
+function copySbp() {
+    const n = '+79175368940';
+    if (navigator.clipboard) navigator.clipboard.writeText(n);
+    showToast('Скопировано!', '✅');
+}
+function showToast(text, icon) {
+    document.getElementById('toast-text').innerText = text;
+    document.getElementById('toast-icon').innerText = icon || '📦';
+    document.getElementById('toast').classList.add('show');
+    setTimeout(() => document.getElementById('toast').classList.remove('show'), 2400);
+}
+function flyToCart(fromEl) {
+    try {
+        const r = fromEl.getBoundingClientRect();
+        const fab = document.getElementById('fab-cart');
+        const t = (fab.style.display === 'none' ? document.querySelector('.nav button:nth-child(2)') : fab).getBoundingClientRect();
+        const dot = document.createElement('div');
+        dot.className = 'fly';
+        dot.textContent = '+';
+        dot.style.left = (r.left + r.width / 2) + 'px';
+        dot.style.top = (r.top + r.height / 2) + 'px';
+        document.body.appendChild(dot);
+        requestAnimationFrame(() => {
+            dot.style.transform = 'translate(' + (t.left - r.left) + 'px,' + (t.top - r.top) + 'px) scale(.3)';
+            dot.style.opacity = '0';
+        });
+        setTimeout(() => dot.remove(), 560);
+    } catch (e) {}
+}
+function renderSkeleton() {
+    document.getElementById('products-container').innerHTML = Array.from({length:4}).map(() => '<div class="card overflow-hidden"><div class="aspect-square skeleton"></div><div class="p-3 space-y-2"><div class="h-3 skeleton rounded"></div><div class="h-8 skeleton rounded"></div></div></div>').join('');
+}
+async function loadCatalog(manual) {
+    if (isLoadingCatalog) return;
+    isLoadingCatalog = true;
+    document.getElementById('sync-error-banner').classList.add('hidden');
+    if (!shoesProducts.length) renderSkeleton();
+    if (!PRODUCTS_ENDPOINT) {
+        shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+        renderCategories(); renderProducts(); updateCartUI();
+        isLoadingCatalog = false; return;
+    }
+    try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(PRODUCTS_ENDPOINT, { signal: ctrl.signal, cache: 'no-store', headers: { 'ngrok-skip-browser-warning': 'true' } });
+        clearTimeout(t);
+        if (!res.ok) throw new Error('http');
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) throw new Error('empty');
+        shoesProducts = data.map(normalizeProduct);
+        renderCategories(); renderProducts(); updateCartUI();
+        if (manual) showToast('Каталог обновлён', '✅');
+    } catch (e) {
+        document.getElementById('sync-error-banner').classList.remove('hidden');
+        if (!shoesProducts.length) {
+            shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+            renderCategories(); renderProducts(); updateCartUI();
+        }
+        if (manual) showToast('Не удалось обновить каталог', '⚠️');
+    } finally { isLoadingCatalog = false; }
+}
+function renderCategories() {
+    const cats = ['all', ...new Set(shoesProducts.map(p => p.cat))];
+    document.getElementById('category-pills').innerHTML = cats.map(c => {
+        const sample = shoesProducts.find(p => c === 'all' ? true : p.cat === c);
+        const img = sample ? sample.images[0] : '';
+        const label = c === 'all' ? 'Все' : c.replace(' обувь','').replace('обувь','');
+        const on = currentCat === c;
+        return `<button onclick="setCategory('${c}')" class="shrink-0 w-[86px] btn-pop">
+            <div class="w-[86px] h-[86px] rounded-2xl overflow-hidden bg-white shadow-sm border ${on ? 'border-red-400 ring-2 ring-red-100' : 'border-slate-100'}">
+                <img src="${img}" class="w-full h-full object-cover">
+            </div>
+            <div class="mt-1.5 text-[11px] font-bold leading-tight text-center ${on ? 'text-[#E11D2E]' : 'text-slate-600'}">${label}</div>
+        </button>`;
+    }).join('');
+}
+function setCategory(cat) { currentCat = cat; closeSheets(); renderCategories(); renderProducts(); }
+function filteredList() {
+    const q = (document.getElementById('search-input') && document.getElementById('search-input').value || '').toLowerCase();
+    let list = currentCat === 'all' ? shoesProducts.slice() : shoesProducts.filter(p => p.cat === currentCat);
+    if (q) list = list.filter(p => (p.title + p.desc + p.sizes + p.cat).toLowerCase().includes(q));
+    if (filters.season !== 'all') list = list.filter(p => detectSeason(p) === filters.season);
+    if (filters.size !== 'all') list = list.filter(p => sizeHits(p, filters.size));
+    if (filters.boxQty) list = list.filter(p => Number(p.box_qty) === Number(filters.boxQty));
+    if (filters.saleOnly) list = list.filter(isSale);
+    if (filters.stock5) list = list.filter(p => p.stock_boxes > 5);
+    if (filters.sort === 'price_asc') list.sort((a,b) => a.price_box - b.price_box);
+    if (filters.sort === 'price_desc') list.sort((a,b) => b.price_box - a.price_box);
+    if (filters.sort === 'new') list.sort((a,b) => Number(isNew(b)) - Number(isNew(a)));
+    return list;
+}
+
+// РЕНДЕР КАРТОЧЕК С РЕЙТИНГОМ
+function renderProducts() {
+    const list = filteredList();
+    const box = document.getElementById('products-container');
+    if (!list.length) { box.innerHTML = '<div class="col-span-2 text-center py-10 text-slate-400 text-sm">Нет моделей</div>'; return; }
+    box.innerHTML = list.map((p, i) => {
+        const inCart = cart[p.id] ? cart[p.id].qty_boxes : 0;
+        const out = p.stock_boxes <= 0;
+        const low = p.stock_boxes > 0 && p.stock_boxes <= 5;
+        const rrc = retailPair(p);
+        const profit = boxProfit(p);
+        const liked = favorites.indexOf(p.id) >= 0;
+        const sizeBits = sizePreview(p);
+        const revs = getProductReviews(p.id);
+        const revCount = revs.length;
+
+        return `<article class="card overflow-hidden" style="animation-delay:${i * 40}ms" onclick="openProductModal('${p.id}')">
+            <div class="photo-shine relative aspect-square bg-slate-100">
+                <img src="${p.images[0]}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/eee/999?text=RG'">
+                <span class="absolute top-2 left-2 bg-[#E11D2E] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">${p.badge}</span>
+                
+                <!-- Бейдж рейтинга и отзывов прямо на фото -->
+                <span class="absolute bottom-2 right-2 bg-white/95 backdrop-blur-sm text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-sm">
+                    <span class="text-amber-500">★</span> ${p.rating || 4.9} (${revCount})
+                </span>
+
+                ${p.stock_boxes > 0 ? `<span class="stock-badge absolute top-2 right-2 bg-black/70 text-white text-[9px] font-extrabold px-1.5 py-1 rounded-md">${low ? '🔥 ' : ''}Осталось ${p.stock_boxes} кор.</span>` : `<span class="absolute top-2 right-2 bg-black/70 text-white text-[9px] font-extrabold px-1.5 py-1 rounded-md">Нет коробов</span>`}
+                <button type="button" class="fav ${liked ? 'on' : ''}" onclick="event.stopPropagation(); toggleFav('${p.id}')">${liked ? '❤' : '♡'}</button>
+            </div>
+            <div class="p-2.5">
+                <h3 class="text-[12px] font-extrabold leading-4 line-clamp-2 min-h-[32px]">${p.title}</h3>
+                <div class="mt-1 flex items-end justify-between gap-1">
+                    <div>
+                        <div class="text-[15px] leading-none font-extrabold text-[#E11D2E]">${p.price_box.toLocaleString('ru-RU')} ₽</div>
+                        <div class="text-[10px] text-slate-400 font-semibold">${p.price_pair} ₽/пара • ${p.box_qty} пар</div>
+                    </div>
+                    <button type="button" class="btn-ghost px-2" onclick="event.stopPropagation(); openProductModal('${p.id}')">Фото</button>
+                </div>
+                <div class="mt-1.5 flex flex-wrap gap-1">${sizeBits}</div>
+                <div class="mt-1.5 text-[11px] leading-4 text-slate-500 bg-slate-100 rounded-lg px-2 py-1.5">${formatRostovka(p)}</div>
+                <div class="margin-chip mt-1.5 rounded-lg px-2 py-1.5 text-[11px] leading-4 text-emerald-800 font-bold">
+                    РРЦ ~${rrc.toLocaleString('ru-RU')} ₽/пара
+                    <div>Прибыль с короба <b>+${profit.toLocaleString('ru-RU')} ₽</b></div>
+                </div>
+            </div>
+            <div class="px-2.5 pb-2.5 space-y-1.5" onclick="event.stopPropagation()">
+                ${out ? '<div class="h-9 rounded-xl bg-slate-100 text-slate-400 text-[11px] font-bold flex items-center justify-center">Нет в наличии</div>'
+                : (inCart ? `<div class="stepper"><button type="button" onclick="updateCartBoxes('${p.id}',${inCart-1})">−</button><span class="text-[12px] font-extrabold">${inCart} кор.</span><button type="button" onclick="updateCartBoxes('${p.id}',${inCart+1}, this)">+</button></div>
+                   <button type="button" class="btn-ghost w-full" onclick="showCheckout()">Оформить сейчас</button>`
+                : `<button type="button" class="btn-box" onclick="updateCartBoxes('${p.id}',1, this)">＋ ВЗЯТЬ КОРОБ</button>
+                   <button type="button" class="btn-ghost w-full" onclick="quickOrder('${p.id}', this)">Быстрый заказ</button>`)}
+            </div>
+        </article>`;
+    }).join('');
+}
+
+let mgTab = 'wb';
+const FEES = { wb: 0.30, ozon: 0.20 };
+function openMarginSheet(id) {
+    const p = shoesProducts.find(x => x.id === id);
+    if (!p) return;
+    currentModalId = id;
+    document.getElementById('mg-title').innerText = p.title;
+    mgTab = 'wb';
+    paintMgTabs();
+    const start = Math.max(p.price_pair + 200, retailPair(p));
+    const sl = document.getElementById('mg-slider');
+    sl.min = Math.max(300, p.price_pair);
+    sl.max = Math.max(start * 2.6, p.price_pair + 1800);
+    sl.value = start;
+    drawMg();
+    document.getElementById('margin-sheet').classList.add('open');
+}
+function setMgTab(tab) { mgTab = tab; paintMgTabs(); drawMg(); }
+function paintMgTabs() {
+    document.getElementById('mg-tab-wb').className = 'h-10 rounded-xl text-[12px] font-extrabold ' + (mgTab==='wb' ? 'bg-violet-600 text-white' : 'bg-slate-100');
+    document.getElementById('mg-tab-oz').className = 'h-10 rounded-xl text-[12px] font-extrabold ' + (mgTab==='ozon' ? 'bg-violet-600 text-white' : 'bg-slate-100');
+}
+function onMgSlider(v) { drawMg(Number(v)); }
+function drawMg() {
+    const p = shoesProducts.find(x => x.id === currentModalId); if (!p) return;
+    const sl = document.getElementById('mg-slider');
+    const sell = Number(sl.value);
+    const fee = FEES[mgTab];
+    const after = Math.round(sell * (1 - fee));
+    const clean = after - p.price_pair;
+    const box = clean * p.box_qty;
+    document.getElementById('mg-sell-label').innerText = sell.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('mg-opt').innerText = p.price_pair.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('mg-fee').innerText = Math.round(fee*100) + '%';
+    document.getElementById('mg-pair').innerText = (clean>=0?'+':'') + clean.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('mg-box').innerText = (box>=0?'+':'') + box.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('mg-hint').innerText = (mgTab==='wb' ? 'WB: комиссия ~30% без логистики FBO.' : 'Ozon: комиссия ~20% без логистики FBS/FBO.');
+    const min = Number(sl.min), max = Number(sl.max);
+    const pts = [];
+    for (let i=0;i<=12;i++){
+        const price = min + (max-min)*i/12;
+        pts.push(price*(1-fee) - p.price_pair);
+    }
+    const lo = Math.min.apply(null, pts.concat([0]));
+    const hi = Math.max.apply(null, pts.concat([1]));
+    const coords = pts.map(function(y,i){
+        const x = 8 + i*(264/12);
+        const yy = 58 - ((y-lo)/(hi-lo||1))*44;
+        return x.toFixed(1)+','+yy.toFixed(1);
+    }).join(' ');
+    const curX = 8 + ((sell-min)/(max-min||1))*264;
+    const curY = 58 - ((clean-lo)/(hi-lo||1))*44;
+    document.getElementById('mg-chart').innerHTML =
+        '<polyline fill="none" stroke="#7c3aed" stroke-width="2.6" stroke-linecap="round" points="'+coords+'"></polyline>' +
+        '<circle cx="'+curX.toFixed(1)+'" cy="'+curY.toFixed(1)+'" r="4.5" fill="#e11d2e"></circle>';
+}
+
+// ОТКРЫТИЕ КАРТОЧКИ ТОВАРА С ОТЗЫВАМИ
+function openProductModal(id) {
+    const p = shoesProducts.find(x => x.id === id); if (!p) return;
+    currentModalId = id;
+    document.getElementById('modal-badge').innerText = p.badge;
+    document.getElementById('modal-main-img').src = p.images[0];
+    document.getElementById('modal-title').innerText = p.title;
+    document.getElementById('modal-pair-price').innerText = p.price_pair + ' ₽ / пара';
+    document.getElementById('modal-box-price').innerText = p.price_box.toLocaleString('ru-RU') + ' ₽ / короб';
+    document.getElementById('modal-rostovka').innerText = formatRostovka(p);
+    document.getElementById('modal-margin').innerHTML = 'РРЦ в рознице: ~' + retailPair(p).toLocaleString('ru-RU') + ' ₽/пара<br>Прибыль с короба: +' + boxProfit(p).toLocaleString('ru-RU') + ' ₽';
+    
+    // Бейдж рейтинга
+    const revs = getProductReviews(id);
+    document.getElementById('modal-rating-badge').innerHTML = `
+        <div class="flex items-center gap-1 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg text-xs font-extrabold text-amber-800">
+            <span class="text-amber-500">★</span> ${p.rating || 4.9}
+        </div>
+        <span class="text-[11px] font-bold text-slate-400">• ${revs.length} отзывов от оптовиков</span>
+    `;
+
+    renderModalReviews(id);
+
+    const mgBox = document.getElementById('modal-mg-box');
+    if (mgBox) mgBox.classList.add('hidden');
+    modalMgTab = 'wb';
+    document.getElementById('modal-stock-badge').innerText = (p.stock_boxes <= 5 ? '🔥 ' : '') + 'Осталось ' + p.stock_boxes + ' короба';
+    document.getElementById('modal-sizes').innerText = p.sizes;
+    document.getElementById('modal-desc').innerText = p.desc;
+    document.getElementById('modal-thumbnails').innerHTML = p.images.map(img => `<img src="${img}" onclick="document.getElementById('modal-main-img').src='${img}'" class="w-14 h-14 rounded-xl object-cover border border-slate-200">`).join('');
+    const maxBoxes = Math.max(p.stock_boxes, 1);
+    const current = Math.min(cart[p.id] ? cart[p.id].qty_boxes : 1, maxBoxes);
+    document.getElementById('modal-slider').min = 1;
+    document.getElementById('modal-slider').max = maxBoxes;
+    document.getElementById('modal-slider').value = current;
+    document.getElementById('slider-number-input').value = current;
+    updateModalCalculations(p, current);
+    startReserveTimer();
+    document.getElementById('product-modal').classList.add('open');
+}
+
+// РЕНДЕР СПИСКА ОТЗЫВОВ В МОДАЛКЕ
+function renderModalReviews(prodId) {
+    const list = getProductReviews(prodId);
+    document.getElementById('reviews-count-badge').innerText = list.length;
+    const container = document.getElementById('modal-reviews-list');
+    
+    if (!list.length) {
+        container.innerHTML = '<div class="text-[11px] text-slate-400 py-2 text-center">Будьте первым оптовиком, оставившим отзыв!</div>';
+        return;
+    }
+
+    container.innerHTML = list.map(r => `
+        <div class="bg-white rounded-xl p-2.5 border border-slate-100 shadow-sm space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+                <div class="flex items-center gap-1.5">
+                    <span class="font-extrabold text-slate-900">${r.author}</span>
+                    <span class="text-[9px] bg-slate-100 font-bold text-slate-500 px-1.5 py-0.5 rounded">${r.city}</span>
+                </div>
+                <span class="text-[10px] text-slate-400">${r.date}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-amber-400 text-xs">★★★★★</span>
+                <span class="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded">Выкуп: ${r.boxes} кор.</span>
+            </div>
+            <p class="text-[11px] text-slate-600 leading-snug pt-0.5">${r.text}</p>
+        </div>
+    `).join('');
+}
+
+// ДОБАВЛЕНИЕ СВОЕГО ОТЗЫВА
+let reviewStars = 5;
+function openAddReviewModal() {
+    document.getElementById('add-review-sheet').classList.add('open');
+}
+function closeAddReviewModal() {
+    document.getElementById('add-review-sheet').classList.remove('open');
+}
+function setRevStars(n) {
+    reviewStars = n;
+}
+function submitReview() {
+    const name = document.getElementById('rev-name').value.trim();
+    const city = document.getElementById('rev-city').value.trim();
+    const boxes = parseInt(document.getElementById('rev-boxes').value) || 1;
+    const text = document.getElementById('rev-text').value.trim();
+
+    if (!name || !city || !text) {
+        showToast('Заполните имя, город и текст', '⚠️');
+        return;
+    }
+
+    const currentList = getProductReviews(currentModalId);
+    currentList.unshift({
+        author: name,
+        city: city,
+        boxes: boxes,
+        rating: reviewStars,
+        date: 'Только что',
+        text: text
+    });
+
+    saveProductReviews(currentModalId, currentList);
+    renderModalReviews(currentModalId);
+    renderProducts(); // обновить счетчик на карточке
+    closeAddReviewModal();
+    
+    // Очистить поля
+    document.getElementById('rev-name').value = '';
+    document.getElementById('rev-city').value = '';
+    document.getElementById('rev-text').value = '';
+
+    showToast('Отзыв опубликован!', '⭐');
+}
+
+function closeProductModal() {
+    if (reserveTimerId) { clearInterval(reserveTimerId); reserveTimerId = null; }
+    document.getElementById('product-modal').classList.remove('open');
+}
+function onSliderChange(val) {
+    const qty = parseInt(val) || 1;
+    document.getElementById('slider-number-input').value = qty;
+    const p = shoesProducts.find(x => x.id === currentModalId);
+    if (p) updateModalCalculations(p, qty);
+}
+function onNumberInputChange(val) {
+    const p = shoesProducts.find(x => x.id === currentModalId);
+    const maxBoxes = p ? Math.max(p.stock_boxes, 1) : 99;
+    let qty = Math.min(Math.max(parseInt(val) || 1, 1), maxBoxes);
+    document.getElementById('modal-slider').value = qty;
+    if (p) updateModalCalculations(p, qty);
+}
+function updateModalCalculations(product, boxes) {
+    const unit = boxUnitPrice(product, boxes);
+    const total = boxes * unit;
+    document.getElementById('modal-calc-pairs').innerText = boxes * product.box_qty;
+    document.getElementById('modal-calc-total').innerText = total.toLocaleString('ru-RU') + ' ₽';
+    renderVolumeBar(product, boxes);
+    document.getElementById('modal-action-slot').innerHTML = `<button onclick="commitModalCart('${product.id}', ${boxes}, this)" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">ДОБАВИТЬ ${boxes} КОР. • ${total.toLocaleString('ru-RU')} ₽</button>`;
+}
+function commitModalCart(id, boxes, el) { updateCartBoxes(id, boxes, el); closeProductModal(); showToast('Добавлено ' + boxes + ' кор.', '✅'); }
+function updateCartBoxes(id, newBoxes, el) {
+    const p = shoesProducts.find(x => x.id === id); if (!p) return;
+    if (newBoxes <= 0) delete cart[id];
+    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: boxUnitPrice(p, newBoxes), title: p.title };
+    if (el && newBoxes > 0) flyToCart(el);
+    renderProducts(); updateCartUI();
+}
+function updateCartUI() {
+    let boxes = 0;
+    Object.values(cart).forEach(i => boxes += i.qty_boxes);
+    const badge = document.getElementById('cart-badge');
+    const fab = document.getElementById('fab-cart');
+    if (boxes > 0) { badge.classList.remove('hidden'); badge.innerText = boxes; fab.style.display = 'flex'; }
+    else { badge.classList.add('hidden'); fab.style.display = 'none'; }
+}
+function setShip(mode) {
+    shipMode = mode;
+    ['cdek','tk','bus','pickup'].forEach(m => {
+        const el = document.getElementById('ship-' + m);
+        if (el) el.classList.toggle('active', m === mode);
+    });
+    document.getElementById('cdek-fields').classList.toggle('hidden', mode !== 'cdek');
+    document.getElementById('tk-fields').classList.toggle('hidden', mode !== 'tk');
+    document.getElementById('bus-fields').classList.toggle('open', mode === 'bus');
+}
+function currentTk() {
+    if (shipMode === 'cdek') return 'СДЭК';
+    if (shipMode === 'tk') return document.getElementById('buyer-tk-extra').value;
+    if (shipMode === 'pickup') return 'Самовывоз Линия 2-3-01';
+    return 'Рейсовый автобус (Садовод / ТЯК Люблино)';
+}
+function showCheckout() {
+    if (!Object.keys(cart).length) { showToast('Корзина пустая', '⚠️'); return; }
+    let sum = 0;
+    const box = document.getElementById('checkout-cart-items');
+    box.innerHTML = '';
+    Object.values(cart).forEach(item => {
+        const sub = item.qty_boxes * item.price_box; sum += sub;
+        box.innerHTML += `<div class="flex justify-between gap-2 bg-slate-50 rounded-xl p-2.5 text-[12px]"><div><b>${item.title}</b><div class="text-slate-400">${item.qty_boxes} кор.</div></div><b>${sub.toLocaleString('ru-RU')} ₽</b></div>`;
+    });
+    document.getElementById('checkout-total').innerText = sum.toLocaleString('ru-RU') + ' ₽';
+    let boxes = 0;
+    Object.values(cart).forEach(it => boxes += it.qty_boxes);
+    const pairsEl = document.getElementById('checkout-pairs');
+    if (pairsEl) pairsEl.innerText = boxes + ' кор. • ' + (boxes * 8) + ' пар в партии';
+    document.getElementById('checkout-form').classList.add('open');
+}
+
+const WB_FEE = 0.30;
+
+let modalMgTab = 'wb';
+function toggleModalMargin() {
+    const box = document.getElementById('modal-mg-box');
+    const open = box.classList.contains('hidden');
+    box.classList.toggle('hidden', !open);
+    if (open) {
+        const p = shoesProducts.find(x => x.id === currentModalId);
+        if (p) setupWbMargin(p);
+    }
+}
+function setModalMgTab(tab) {
+    modalMgTab = tab;
+    document.getElementById('mm-tab-wb').className = 'h-9 rounded-xl text-[11px] font-extrabold ' + (tab==='wb' ? 'bg-violet-600 text-white' : 'bg-white');
+    document.getElementById('mm-tab-oz').className = 'h-9 rounded-xl text-[11px] font-extrabold ' + (tab==='ozon' ? 'bg-violet-600 text-white' : 'bg-white');
+    const p = shoesProducts.find(x => x.id === currentModalId);
+    if (p) drawWb(p, Number(document.getElementById('wb-slider').value));
+}
+function setupWbMargin(p) {
+    const start = Math.max(p.price_pair + 200, retailPair(p));
+    const sl = document.getElementById('wb-slider');
+    sl.min = Math.max(300, p.price_pair);
+    sl.max = Math.max(start * 2.4, p.price_pair + 1500);
+    sl.value = start;
+    drawWb(p, Number(sl.value));
+}
+function onWbSlider(val) {
+    const p = shoesProducts.find(x => x.id === currentModalId);
+    if (p) drawWb(p, Number(val));
+}
+function drawWb(p, sell) {
+    const fee = (typeof modalMgTab !== 'undefined' && modalMgTab === 'ozon') ? 0.20 : WB_FEE;
+    const after = Math.round(sell * (1 - fee));
+    const clean = after - p.price_pair;
+    const boxClean = clean * p.box_qty;
+    document.getElementById('wb-price-label').innerText = sell.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('wb-opt').innerText = p.price_pair.toLocaleString('ru-RU');
+    document.getElementById('wb-after').innerText = after.toLocaleString('ru-RU');
+    const fl = document.getElementById('wb-fee-label');
+    if (fl) fl.innerText = (modalMgTab==='ozon' ? 'OZON −20%' : 'WB −30%');
+    document.getElementById('wb-clean').innerText = (clean >= 0 ? '+' : '') + clean.toLocaleString('ru-RU');
+    document.getElementById('wb-net').innerText = 'с короба +' + boxClean.toLocaleString('ru-RU') + ' ₽';
+    const sl = document.getElementById('wb-slider');
+    const min = Number(sl.min), max = Number(sl.max);
+    const pts = [];
+    for (let i = 0; i <= 12; i++) {
+        const price = min + (max - min) * i / 12;
+        const y = (price * (1 - fee) - p.price_pair);
+        pts.push(y);
+    }
+    const lo = Math.min.apply(null, pts.concat([0]));
+    const hi = Math.max.apply(null, pts.concat([1]));
+    const coords = pts.map(function (y, i) {
+        const x = 8 + i * (264 / 12);
+        const yy = 52 - ((y - lo) / (hi - lo || 1)) * 40;
+        return x.toFixed(1) + ',' + yy.toFixed(1);
+    }).join(' ');
+    const zeroY = 52 - ((0 - lo) / (hi - lo || 1)) * 40;
+    const curX = 8 + ((sell - min) / (max - min || 1)) * 264;
+    const curY = 52 - ((clean - lo) / (hi - lo || 1)) * 40;
+    document.getElementById('wb-chart').innerHTML =
+        '<line x1="8" y1="' + zeroY.toFixed(1) + '" x2="272" y2="' + zeroY.toFixed(1) + '" stroke="#ddd6fe" stroke-width="1"></line>' +
+        '<polyline fill="none" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" points="' + coords + '"></polyline>' +
+        '<circle cx="' + curX.toFixed(1) + '" cy="' + curY.toFixed(1) + '" r="4.2" fill="#e11d2e"></circle>';
+}
+function clearCartAndClose() {
+    cart = {};
+    renderProducts();
+    updateCartUI();
+    hideCheckout();
+    showToast('Корзина очищена', '🗑️');
+}
+function hideCheckout() { document.getElementById('checkout-form').classList.remove('open'); }
+function openSearch() { document.getElementById('search-sheet').classList.add('open'); setTimeout(() => document.getElementById('search-input').focus(), 50); }
+function openParams() { draft = Object.assign({}, filters); renderFilterSheet(); document.getElementById('params-sheet').classList.add('open'); }
+function closeSheets() {
+    document.getElementById('search-sheet').classList.remove('open');
+    document.getElementById('params-sheet').classList.remove('open');
+}
+function sendOrderToBot() {
+    const name = document.getElementById('buyer-company').value.trim();
+    const contacts = document.getElementById('buyer-contacts').value.trim();
+    let city = document.getElementById('buyer-city').value.trim();
+    const tk = currentTk();
+    if (!name || !contacts) { showToast('Заполните ФИО и телефон', '⚠️'); return; }
+    let busNote = '';
+    if (shipMode === 'cdek') {
+        const pvz = (document.getElementById('cdek-pvz') || {}).value || '';
+        if (!pvz) { showToast('Укажите адрес ПВЗ СДЭК', '⚠️'); return; }
+        busNote = 'ПВЗ: ' + pvz;
+    }
+    if (shipMode === 'tk') {
+        const tc = (document.getElementById('tk-city') || {}).value || '';
+        const tf = (document.getElementById('tk-fio') || {}).value || '';
+        const td = (document.getElementById('tk-doc') || {}).value || '';
+        if (!tc || !tf || !td) { showToast('Для ТК укажите город, ФИО и паспорт/ИНН', '⚠️'); return; }
+        city = tc; busNote = 'Получатель: ' + tf + '; документ: ' + td;
+    }
+    if (shipMode === 'pickup') { city = city || 'Самовывоз Салют 2-3-01'; }
+    if (shipMode === 'bus') {
+        const busCity = document.getElementById('bus-city').value.trim();
+        const stand = document.getElementById('bus-stand').value.trim();
+        const plate = document.getElementById('bus-plate').value.trim();
+        if (!busCity || !stand || !plate) { showToast('Для автобуса укажите город, стоянку и госномер / телефон водителя', '⚠️'); return; }
+        city = busCity;
+        busNote = 'Стоянка: ' + stand + '; Автобус/водитель: ' + plate;
+    } else if (!city) {
+        showToast('Укажите город назначения', '⚠️');
+        return;
+    }
+    const cartItems = []; let totalSum = 0;
+    Object.entries(cart).forEach(([id, item]) => {
+        cartItems.push({ id, title: item.title, qty: item.qty_boxes, price: item.price_box, total: item.qty_boxes * item.price_box });
+        totalSum += item.qty_boxes * item.price_box;
+    });
+    const payload = {
+        type: 'order',
+        company: name + ' (ТК: ' + tk + (busNote ? '; ' + busNote : '') + ')',
+        city, contacts, tk, bus: busNote, pay_method: 'sbp', buyer_inn: 'Не указан',
+        cart: cartItems, total_sum: totalSum
+    };
+    const plain = ['RG_ORDER','PAY:sbp','SUM:' + totalSum,'COMPANY:' + payload.company,'CITY:' + city,'CONTACTS:' + contacts,'SHIP:' + tk].concat(busNote ? ['BUS:' + busNote] : []).concat(cartItems.map(it => 'ITEM:' + it.title + '|' + it.qty + '|' + it.total)).join('\n');
+    window.__lastPlainOrder = plain;
+    document.getElementById('order-fallback-text').value = plain;
+    try {
+        if (tg && typeof tg.sendData === 'function') tg.sendData(JSON.stringify(payload));
+        showToast('Заявка передана на сборку', '✅');
+        setTimeout(() => { try { tg.close(); } catch(e) {} }, 700);
+    } catch (e) {
+        document.getElementById('order-fallback').classList.remove('hidden');
+        showToast('Скопируйте заявку и отправьте в чат бота', '⚠️');
+    }
+}
+function copyFallbackOrder() {
+    const text = window.__lastPlainOrder || '';
+    if (navigator.clipboard) navigator.clipboard.writeText(text);
+    showToast('Скопировано', '✅');
+}
+function openLightbox() {
+    document.getElementById('lightbox-img').src = document.getElementById('modal-main-img').src;
+    document.getElementById('lightbox-modal').classList.remove('opacity-0','pointer-events-none');
+}
+function closeLightbox() { document.getElementById('lightbox-modal').classList.add('opacity-0','pointer-events-none'); }
+const TICKS = [
+    'Казань забрала 12 коробов Dino Albat',
+    'Новосибирск — 8 коробов туфли NEW-2026',
+    'Ростов: автобус, стоянка 14, уехал 16:40',
+    'Екатеринбург выкупил распродажу 32–37',
+    'Самара: 6 коробов зима, самовывоз Салют'
+];
+document.getElementById('ticker-track').innerHTML = (TICKS.concat(TICKS).map(s => '  •  ' + s).join(''));
+const HEROES = [
+    { img: 'https://i.postimg.cc/34TQJjq6/42145.jpg', title: 'Садовод. Короба. Без посредников.', sub: 'ТЦ Салют • 2-3-01<br>+7 917 536-89-40 • Равшан' },
+    { img: 'https://i.postimg.cc/1nH2mkw6/6122.jpg', title: 'Зима уже уходит со склада.', sub: 'Шерсть Dino Albat • 8 пар в коробе<br>Остатки жгут — берите ростовкой' },
+    { img: 'https://i.postimg.cc/d7ggNRvC/photo-2026-09-22-20-40-29.jpg', title: 'Распродажа маломерок 32–37.', sub: '225 ₽ пара • 1 800 ₽ короб<br>Идеально под рынок и WB' }
+];
+let heroI = 0;
+function paintHero() {
+    const h = HEROES[heroI % HEROES.length];
+    document.getElementById('hero-img').src = h.img;
+    document.getElementById('hero-title').innerHTML = h.title;
+    document.getElementById('hero-sub').innerHTML = h.sub;
+    document.getElementById('hero-dots').innerHTML = HEROES.map((_,i)=>'<i class="'+(i===heroI%HEROES.length?'on':'')+'"></i>').join('');
+}
+paintHero();
+setInterval(function(){ heroI++; paintHero(); }, 4200);
+document.getElementById('hero-card').addEventListener('click', function(){ heroI++; paintHero(); });
+loadCatalog();
+setInterval(loadCatalog, 60000);
+</script>
 </body>
 </html>
