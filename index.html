@@ -32,7 +32,7 @@
             -webkit-tap-highlight-color: transparent;
             margin: 0;
         }
-        .app { width: 100%; max-width: 480px; margin: 0 auto; min-height: 100vh; background: #F4F6F8; position: relative; padding-bottom: calc(88px + var(--safe-bottom)); }
+        .app { width: 100%; max-width: 480px; margin: 0 auto; min-height: 100vh; background: #F4F6F8; position: relative; padding-top: 62px; padding-bottom: calc(88px + var(--safe-bottom)); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .card {
@@ -77,16 +77,21 @@
             transition: transform .55s cubic-bezier(.16,1,.3,1), opacity .55s;
         }
         .sheet {
-            position: fixed; inset: 0; z-index: 60; background: rgba(17,24,39,.45);
+            position: fixed; inset: 0; z-index: 80; background: rgba(8,12,20,.72);
             display: flex; align-items: flex-end; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity .25s ease;
         }
         .sheet.open { opacity: 1; pointer-events: auto; }
         .sheet-panel {
-            width: 100%; max-width: 480px; background: #fff; border-radius: 24px 24px 0 0;
-            max-height: 92vh; overflow: auto; transform: translateY(110%);
+            width: 100%; max-width: 480px; background: #fff; border-radius: 20px 20px 0 0;
+            height: calc(100dvh - 8px); max-height: calc(100dvh - 8px);
+            overflow: auto; transform: translateY(110%);
             transition: transform .32s cubic-bezier(.16,1,.3,1);
             padding-bottom: calc(20px + var(--safe-bottom));
+            -webkit-overflow-scrolling: touch;
+        }
+        #product-modal.sheet-panel, #product-sheet {
+            height: calc(100dvh - 8px); max-height: calc(100dvh - 8px);
         }
         .sheet.open .sheet-panel { transform: translateY(0); }
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
@@ -196,7 +201,7 @@
 </head>
 <body>
 <div class="app">
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+    <header class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-11 h-11 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                 <img src="https://i.postimg.cc/0QsGwkKw/photo-2025-09-26-12-18-10-(2).jpg" alt="RG" class="w-full h-full object-contain">
@@ -403,6 +408,9 @@
         <button type="button" id="video-review-btn" onclick="openVideoReview()" class="w-full h-11 rounded-2xl bg-black/80 text-white text-[12px] font-extrabold flex items-center justify-center gap-2">
             ▶ Смотреть живой видеообзор партии (15 сек)
         </button>
+        <a id="media-pack-btn" href="#" onclick="event.preventDefault(); downloadMediaPack(currentModalId)" class="w-full h-11 rounded-2xl bg-white border border-slate-200 text-[12px] font-extrabold text-slate-800 flex items-center justify-center gap-2">
+            📥 Скачать медиа-пак для Авито и Telegram (фото в HD)
+        </a>
         <h2 id="modal-title" class="text-base font-extrabold leading-snug"></h2>
         <div class="flex gap-3 text-[12px] font-bold">
             <span id="modal-pair-price" class="text-emerald-600"></span>
@@ -437,6 +445,7 @@
         </div>
         <p id="modal-sizes" class="text-[12px] text-slate-500 font-semibold"></p>
         <p id="modal-desc" class="text-[12px] text-slate-500"></p>
+        <div id="honest-sign" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] font-bold text-emerald-800">🛡 Маркировка «Честный Знак» (DataMatrix) в комплекте</div>
         <div class="card p-3 space-y-2">
             <div class="flex justify-between items-center">
                 <div>
@@ -450,6 +459,11 @@
                 <span>Пар: <b id="modal-calc-pairs">8</b></span>
                 <span id="modal-calc-total" class="text-[#E11D2E]">0 ₽</span>
             </div>
+        </div>
+        <div id="volume-bar" class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-2">
+            <div class="text-[11px] font-extrabold text-slate-500">Скидка за объём</div>
+            <div class="h-2 rounded-full bg-slate-200 overflow-hidden"><div id="volume-fill" class="h-full bg-[#E11D2E] transition-all duration-300" style="width:20%"></div></div>
+            <div id="volume-tiers" class="grid grid-cols-3 gap-1"></div>
         </div>
         <div id="reserve-box" class="rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2.5 flex items-center gap-2">
             <span class="text-lg">⏱</span>
@@ -696,6 +710,51 @@ function fmtHMS(s) {
     const sec = String(s%60).padStart(2,'0');
     return h + ':' + m + ':' + sec;
 }
+
+function volumeTiers(p) {
+    const base = Number(p.price_box) || 0;
+    const t3 = Math.round(base * 0.955 / 50) * 50;
+    const t5 = Math.round(base * 0.898 / 50) * 50;
+    return [
+        { min: 1, price: base, label: '1 кор' },
+        { min: 3, price: t3 || base, label: '3 кор' },
+        { min: 5, price: t5 || base, label: '5 кор' }
+    ];
+}
+function boxUnitPrice(p, boxes) {
+    const tiers = volumeTiers(p);
+    let price = tiers[0].price;
+    tiers.forEach(function (t) { if (boxes >= t.min) price = t.price; });
+    return price;
+}
+function renderVolumeBar(p, boxes) {
+    const wrap = document.getElementById('volume-tiers');
+    const fill = document.getElementById('volume-fill');
+    if (!wrap || !p) return;
+    const tiers = volumeTiers(p);
+    let active = 0;
+    tiers.forEach(function (t, i) { if (boxes >= t.min) active = i; });
+    fill.style.width = ((active + 1) / tiers.length * 100) + '%';
+    wrap.innerHTML = tiers.map(function (t, i) {
+        const on = i === active;
+        return '<div class="rounded-xl px-1 py-1.5 text-center ' + (on ? 'bg-[#111827] text-white' : 'bg-white text-slate-500') + '">' +
+            '<div class="text-[10px] font-extrabold">' + t.label + '</div>' +
+            '<div class="text-[10px] font-bold">' + t.price.toLocaleString('ru-RU') + ' ₽</div></div>';
+    }).join('');
+}
+function downloadMediaPack(id) {
+    const p = shoesProducts.find(x => x.id === id) || shoesProducts.find(x => x.id === currentModalId);
+    if (!p) { showToast('Нет фото', '⚠️'); return; }
+    const first = (p.images && p.images[0]) || '';
+    if (first) {
+        const a = document.createElement('a');
+        a.href = first;
+        a.download = (p.id || 'rg') + '_hd.jpg';
+        a.target = '_blank';
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+    showToast('Медиа-пак: фото в HD', '📥');
+}
 function startReserveTimer() {
     reserveLeft = 7200;
     if (reserveTimerId) { clearInterval(reserveTimerId); reserveTimerId = null; }
@@ -837,21 +896,21 @@ function renderProducts() {
         const profit = boxProfit(p);
         const liked = favorites.indexOf(p.id) >= 0;
         const sizeBits = sizePreview(p);
-        return `<article class="card overflow-hidden" style="animation-delay:${i * 40}ms">
-            <div class="photo-shine relative aspect-square bg-slate-100" onclick="openProductModal('${p.id}')">
+        return `<article class="card overflow-hidden" style="animation-delay:${i * 40}ms" onclick="openProductModal('${p.id}')">
+            <div class="photo-shine relative aspect-square bg-slate-100">
                 <img src="${p.images[0]}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/eee/999?text=RG'">
                 <span class="absolute top-2 left-2 bg-[#E11D2E] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">${p.badge}</span>
                 ${p.stock_boxes > 0 ? `<span class="stock-badge absolute top-2 right-2 bg-black/70 text-white text-[9px] font-extrabold px-1.5 py-1 rounded-md">${low ? '🔥 ' : ''}Осталось ${p.stock_boxes} кор.</span>` : `<span class="absolute top-2 right-2 bg-black/70 text-white text-[9px] font-extrabold px-1.5 py-1 rounded-md">Нет коробов</span>`}
                 <button type="button" class="fav ${liked ? 'on' : ''}" onclick="event.stopPropagation(); toggleFav('${p.id}')">${liked ? '❤' : '♡'}</button>
             </div>
             <div class="p-2.5">
-                <h3 class="text-[12px] font-extrabold leading-4 line-clamp-2 min-h-[32px]" onclick="openProductModal('${p.id}')">${p.title}</h3>
+                <h3 class="text-[12px] font-extrabold leading-4 line-clamp-2 min-h-[32px]">${p.title}</h3>
                 <div class="mt-1 flex items-end justify-between gap-1">
                     <div>
                         <div class="text-[15px] leading-none font-extrabold text-[#E11D2E]">${p.price_box.toLocaleString('ru-RU')} ₽</div>
                         <div class="text-[10px] text-slate-400 font-semibold">${p.price_pair} ₽/пара • ${p.box_qty} пар</div>
                     </div>
-                    <button type="button" class="btn-ghost px-2" onclick="openProductModal('${p.id}')">Фото</button>
+                    <button type="button" class="btn-ghost px-2" onclick="event.stopPropagation(); openProductModal('${p.id}')">Фото</button>
                 </div>
                 <div class="mt-1.5 flex flex-wrap gap-1">${sizeBits}</div>
                 <div class="mt-1.5 text-[11px] leading-4 text-slate-500 bg-slate-100 rounded-lg px-2 py-1.5">${formatRostovka(p)}</div>
@@ -860,7 +919,7 @@ function renderProducts() {
                     <div>Прибыль с короба <b>+${profit.toLocaleString('ru-RU')} ₽</b></div>
                 </div>
             </div>
-            <div class="px-2.5 pb-2.5 space-y-1.5">
+            <div class="px-2.5 pb-2.5 space-y-1.5" onclick="event.stopPropagation()">
                 ${out ? '<div class="h-9 rounded-xl bg-slate-100 text-slate-400 text-[11px] font-bold flex items-center justify-center">Нет в наличии</div>'
                 : (inCart ? `<div class="stepper"><button type="button" onclick="updateCartBoxes('${p.id}',${inCart-1})">−</button><span class="text-[12px] font-extrabold">${inCart} кор.</span><button type="button" onclick="updateCartBoxes('${p.id}',${inCart+1}, this)">+</button></div>
                    <button type="button" class="btn-ghost w-full" onclick="showCheckout()">Оформить сейчас</button>`
@@ -972,15 +1031,18 @@ function onNumberInputChange(val) {
     if (p) updateModalCalculations(p, qty);
 }
 function updateModalCalculations(product, boxes) {
+    const unit = boxUnitPrice(product, boxes);
+    const total = boxes * unit;
     document.getElementById('modal-calc-pairs').innerText = boxes * product.box_qty;
-    document.getElementById('modal-calc-total').innerText = (boxes * product.price_box).toLocaleString('ru-RU') + ' ₽';
-    document.getElementById('modal-action-slot').innerHTML = `<button onclick="commitModalCart('${product.id}', ${boxes}, this)" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">ДОБАВИТЬ ${boxes} КОР. • ${(boxes * product.price_box).toLocaleString('ru-RU')} ₽</button>`;
+    document.getElementById('modal-calc-total').innerText = total.toLocaleString('ru-RU') + ' ₽';
+    renderVolumeBar(product, boxes);
+    document.getElementById('modal-action-slot').innerHTML = `<button onclick="commitModalCart('${product.id}', ${boxes}, this)" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">ДОБАВИТЬ ${boxes} КОР. • ${total.toLocaleString('ru-RU')} ₽</button>`;
 }
 function commitModalCart(id, boxes, el) { updateCartBoxes(id, boxes, el); closeProductModal(); showToast('Добавлено ' + boxes + ' кор.', '✅'); }
 function updateCartBoxes(id, newBoxes, el) {
     const p = shoesProducts.find(x => x.id === id); if (!p) return;
     if (newBoxes <= 0) delete cart[id];
-    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: p.price_box, title: p.title };
+    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: boxUnitPrice(p, newBoxes), title: p.title };
     if (el && newBoxes > 0) flyToCart(el);
     renderProducts(); updateCartUI();
 }
