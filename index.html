@@ -226,12 +226,9 @@
         <div class="ticker-track" id="ticker-track"></div>
     </div>
 
-    <div class="px-4 pt-2 grid grid-cols-2 gap-2">
-        <button type="button" id="price-download-btn" onclick="downloadPrice()" class="w-full h-10 rounded-xl bg-white border border-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center gap-2">
-            📥 Скачать прайс
-        </button>
-        <button type="button" onclick="loadCatalog(true)" class="w-full h-10 rounded-xl bg-white border border-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center gap-2">
-            🔄 Обновить каталог
+    <div class="px-4 pt-2">
+        <button type="button" id="price-download-btn" onclick="downloadPrice()" class="w-full h-10 rounded-xl bg-white border border-slate-200 text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
+            📥 Скачать остатки с фото (Excel / PDF)
         </button>
     </div>
     <section class="px-4 pt-3">
@@ -718,6 +715,8 @@ const tg = window.Telegram && window.Telegram.WebApp;
 try { tg.ready(); tg.expand(); } catch (e) {}
 const API_BASE_URL = 'https://federal-hardening-sappy.ngrok-free.dev';
 const PRODUCTS_ENDPOINT = API_BASE_URL ? API_BASE_URL + '/api/products' : null;
+const API_HEALTH_ENDPOINT = API_BASE_URL ? API_BASE_URL + '/api/health' : null;
+const API_TIMEOUT_MS = 12000;
 const WA_LINK = 'https://wa.me/79175368940';
 const TG_CHANNEL = 'https://t.me/obuv_optom_rg';
 const TG_MANAGER = 'https://t.me/Ravshan_rg';
@@ -1144,36 +1143,68 @@ function flyToCart(fromEl) {
 function renderSkeleton() {
     document.getElementById('products-container').innerHTML = Array.from({length:4}).map(() => '<div class="card overflow-hidden"><div class="aspect-square skeleton"></div><div class="p-3 space-y-2"><div class="h-3 skeleton rounded"></div><div class="h-8 skeleton rounded"></div></div></div>').join('');
 }
+async function fetchCatalogOnce() {
+    if (!PRODUCTS_ENDPOINT) throw new Error('API endpoint is empty');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), API_TIMEOUT_MS);
+    try {
+        const url = PRODUCTS_ENDPOINT + (PRODUCTS_ENDPOINT.includes('?') ? '&' : '?') + '_=' + Date.now();
+        const res = await fetch(url, {
+            signal: ctrl.signal,
+            cache: 'no-store',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('invalid json');
+        return data;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function loadCatalog(manual) {
     if (isLoadingCatalog) return;
     isLoadingCatalog = true;
     document.getElementById('sync-error-banner').classList.add('hidden');
     if (!shoesProducts.length) renderSkeleton();
+
     if (!PRODUCTS_ENDPOINT) {
         shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
         renderCategories(); renderProducts(); updateCartUI();
-        isLoadingCatalog = false; return;
+        isLoadingCatalog = false;
+        return;
     }
-    try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 8000);
-        const res = await fetch(PRODUCTS_ENDPOINT, { signal: ctrl.signal, cache: 'no-store', headers: { 'ngrok-skip-browser-warning': 'true' } });
-        clearTimeout(t);
-        if (!res.ok) throw new Error('http');
-        const data = await res.json();
-        if (!Array.isArray(data) || !data.length) throw new Error('empty');
-        shoesProducts = data.map(normalizeProduct);
-        renderCategories(); renderProducts(); updateCartUI();
-        if (manual) showToast('Каталог обновлён', '✅');
-    } catch (e) {
-        document.getElementById('sync-error-banner').classList.remove('hidden');
-        if (!shoesProducts.length) {
-            shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+
+    let lastError = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const data = await fetchCatalogOnce();
+            if (!data.length) throw new Error('empty catalog');
+            shoesProducts = data.map(normalizeProduct);
             renderCategories(); renderProducts(); updateCartUI();
+            if (manual) showToast('Каталог обновлён', '✅');
+            isLoadingCatalog = false;
+            return;
+        } catch (e) {
+            lastError = e;
+            if (attempt === 0) await new Promise(r => setTimeout(r, 700));
         }
-        if (manual) showToast('Не удалось обновить каталог', '⚠️');
-    } finally { isLoadingCatalog = false; }
+    }
+
+    console.warn('Каталог API недоступен:', lastError);
+    document.getElementById('sync-error-banner').classList.remove('hidden');
+    if (!shoesProducts.length) {
+        shoesProducts = FALLBACK_PRODUCTS.map(normalizeProduct);
+        renderCategories(); renderProducts(); updateCartUI();
+    }
+    if (manual) showToast('API каталога недоступен', '⚠️');
+    isLoadingCatalog = false;
 }
+
 function renderCategories() {
     const cats = ['all', ...new Set(shoesProducts.map(p => p.cat))];
     document.getElementById('category-pills').innerHTML = cats.map(c => {
@@ -1771,11 +1802,10 @@ paintHero();
 setInterval(function(){ heroI++; paintHero(); }, 4200);
 document.getElementById('hero-card').addEventListener('click', function(){ heroI++; paintHero(); });
 loadCatalog();
-setInterval(loadCatalog, 15000);
-document.addEventListener('visibilitychange', function(){
-    if (!document.hidden) loadCatalog();
-});
-window.addEventListener('focus', function(){ loadCatalog(); });
+setInterval(() => loadCatalog(false), 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadCatalog(false); });
+window.addEventListener('focus', () => loadCatalog(false));
 </script>
+<button id="catalog-refresh-btn" type="button" onclick="loadCatalog(true)" class="fixed right-3 bottom-20 z-[90] h-11 px-4 rounded-2xl bg-white shadow-lg border border-slate-200 text-xs font-extrabold text-slate-700">🔄 Обновить каталог</button>
 </body>
 </html>
