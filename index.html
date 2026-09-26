@@ -102,7 +102,7 @@
         }
         .toast {
             position: fixed; left: 50%; bottom: calc(96px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px);
-            z-index: 80; background: #111827; color: #fff; border-radius: 14px; padding: 10px 14px;
+            z-index: 150; background: #111827; color: #fff; border-radius: 14px; padding: 10px 14px;
             font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none; transition: .25s;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -195,6 +195,14 @@
         }
         .switch.on { background: #111827; }
         .switch.on::after { left: 21px; }
+
+        #video-sheet { z-index: 120 !important; }
+        #size-sheet { z-index: 110 !important; }
+
+        .size-row { transition: background-color .15s ease, border-color .15s ease; cursor: pointer; }
+        .size-row.selected { background-color: #FFF1F2 !important; border-left: 3px solid #E11D2E; }
+        .size-chip-select { transition: all .15s ease; cursor: pointer; }
+        .size-chip-select.selected { background-color: #E11D2E !important; color: #fff !important; border-color: #E11D2E !important; }
     </style>
 </head>
 <body>
@@ -277,7 +285,7 @@
 <button class="fab" onclick="showCheckout()" id="fab-cart" style="display:none">＋</button>
 
 <div id="toast" class="toast"><span id="toast-icon">📦</span> <span id="toast-text">Готово</span></div>
-<div id="lightbox-modal" class="fixed inset-0 z-[90] bg-black/90 flex items-center justify-center p-4 opacity-0 pointer-events-none" onclick="closeLightbox()">
+<div id="lightbox-modal" class="fixed inset-0 z-[140] bg-black/90 flex items-center justify-center p-4 opacity-0 pointer-events-none" onclick="closeLightbox()">
     <img id="lightbox-img" src="" class="max-w-full max-h-[86vh] rounded-2xl" onclick="event.stopPropagation()">
 </div>
 
@@ -287,6 +295,7 @@
         <input id="search-input" oninput="renderProducts()" placeholder="Модель, размер, сезон..." class="w-full h-11 rounded-2xl bg-slate-100 px-4 text-sm font-semibold outline-none">
     </div>
 </div>
+
 <div id="params-sheet" class="sheet" onclick="if(event.target===this)closeSheets()">
     <div class="sheet-panel px-4 pt-3 pb-5">
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3"></div>
@@ -378,16 +387,18 @@
     </div>
 </div>
 
+<!-- ВИДЕООБЗОР (ОТКРЫВАЕТСЯ ПОВЕРХ) -->
 <div id="video-sheet" class="sheet" onclick="if(event.target===this)closeVideoReview()">
-    <div class="sheet-panel p-4 space-y-3 bg-black text-white">
+    <div class="sheet-panel p-4 space-y-3 bg-black text-white" style="height:auto; max-height:85vh;">
+        <div class="w-10 h-1 bg-white/30 rounded-full mx-auto"></div>
         <div class="flex justify-between items-center">
             <b>Видеообзор партии • 15 сек</b>
-            <button type="button" onclick="closeVideoReview()" class="w-8 h-8 rounded-full bg-white/10">✕</button>
+            <button type="button" onclick="closeVideoReview()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-bold">✕</button>
         </div>
-        <video id="review-video" class="w-full rounded-2xl bg-black" controls playsinline poster="https://i.postimg.cc/1nH2mkw6/6122.jpg">
+        <video id="review-video" class="w-full rounded-2xl bg-black max-h-[55vh] object-contain" controls playsinline poster="https://i.postimg.cc/1nH2mkw6/6122.jpg">
             <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
         </video>
-        <p class="text-[11px] text-slate-300">Живой обзор короба с рынка. Если ролик не играет — откройте из Telegram.</p>
+        <p class="text-[11px] text-slate-300">Живой обзор короба со склада Салют 23.03. Если видео не запускается — откройте через Telegram.</p>
     </div>
 </div>
 
@@ -404,23 +415,45 @@
             <span id="modal-stock-badge" class="stock-badge absolute top-2 right-2 bg-black/70 text-white text-[10px] font-extrabold px-2 py-1 rounded-lg"></span>
         </div>
         <div id="modal-thumbnails" class="flex gap-2 overflow-x-auto hide-scrollbar"></div>
-        <button type="button" id="video-review-btn" onclick="openVideoReview()" class="w-full h-11 rounded-2xl bg-black/80 text-white text-[12px] font-extrabold flex items-center justify-center gap-2">
+        
+        <button type="button" id="video-review-btn" onclick="openVideoReview()" class="w-full h-11 rounded-2xl bg-black/85 text-white text-[12px] font-extrabold flex items-center justify-center gap-2 shadow-sm hover:bg-black transition">
             ▶ Смотреть живой видеообзор партии (15 сек)
         </button>
+        
         <a id="media-pack-btn" href="#" onclick="event.preventDefault(); downloadMediaPack(currentModalId)" class="w-full h-11 rounded-2xl bg-white border border-slate-200 text-[12px] font-extrabold text-slate-800 flex items-center justify-center gap-2">
             📥 Скачать медиа-пак для Авито и Telegram (фото в HD)
         </a>
+        
         <h2 id="modal-title" class="text-base font-extrabold leading-snug"></h2>
         
-        <!-- Рейтинг в модалке -->
         <div class="flex items-center gap-2" id="modal-rating-badge"></div>
 
         <div class="flex gap-3 text-[12px] font-bold">
             <span id="modal-pair-price" class="text-emerald-600"></span>
             <span id="modal-box-price" class="text-[#E11D2E]"></span>
         </div>
+
+        <!-- КНОПКА РАЗМЕРНОЙ СЕТКИ С ОТОБРАЖЕНИЕМ ВЫБОРА -->
+        <button type="button" onclick="openSizeModal()" class="w-full h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[12px] font-extrabold text-slate-800 flex items-center justify-center gap-2 transition">
+            <span>📏 Размерная сетка и выбор размеров</span>
+            <span id="modal-size-selected-tag" class="hidden text-[10px] bg-red-100 text-[#E11D2E] px-2 py-0.5 rounded-md font-black"></span>
+        </button>
+
+        <!-- БЛОК ХАРАКТЕРИСТИК С ГАЛОЧКАМИ (BOS-MINI STYLE) -->
+        <div class="rounded-2xl bg-slate-50 border border-slate-200/80 p-3 space-y-2">
+            <div class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wide">Параметры партии</div>
+            <div class="space-y-1.5 text-[12px] font-bold text-slate-700">
+                <div class="flex items-center gap-2"><span class="text-emerald-600 font-extrabold text-sm">✓</span> <span>Фабричное качество LUX (100% проверка на брак)</span></div>
+                <div class="flex items-center gap-2"><span class="text-emerald-600 font-extrabold text-sm">✓</span> <span id="modal-spec-material">Натуральная шерсть / мех / премиум экокожа</span></div>
+                <div class="flex items-center gap-2"><span class="text-emerald-600 font-extrabold text-sm">✓</span> <span>Полная ростовка без пересорта и маломерок</span></div>
+                <div class="flex items-center gap-2"><span class="text-emerald-600 font-extrabold text-sm">✓</span> <span>Маркировка «Честный Знак» (DataMatrix) в комплекте</span></div>
+                <div class="flex items-center gap-2"><span class="text-emerald-600 font-extrabold text-sm">✓</span> <span>Каждая пара в фирменной коробке с фурнитурой</span></div>
+            </div>
+        </div>
+
         <div id="modal-rostovka" class="text-[11px] leading-4 text-slate-500 bg-slate-100 rounded-xl px-2.5 py-2"></div>
         <div id="modal-margin" class="margin-chip rounded-xl px-2.5 py-2 text-[11px] leading-4 text-emerald-800 font-bold"></div>
+        
         <button type="button" id="mg-open-btn" onclick="toggleModalMargin()" class="w-full h-11 rounded-2xl bg-violet-600 text-white text-[12px] font-extrabold">МАРЖИНАЛЬНОСТЬ WB / OZON</button>
         <div id="modal-mg-box" class="hidden rounded-2xl border border-violet-100 bg-violet-50 p-3 space-y-2">
             <div class="grid grid-cols-2 gap-1 mb-1">
@@ -446,10 +479,10 @@
                 <div class="rounded-xl bg-white p-1.5"><div class="text-[9px] text-slate-400 font-bold">ЧИСТЫМИ</div><div id="wb-clean" class="text-[11px] font-extrabold text-emerald-600">0</div></div>
             </div>
         </div>
+        
         <p id="modal-sizes" class="text-[12px] text-slate-500 font-semibold"></p>
         <p id="modal-desc" class="text-[12px] text-slate-500"></p>
-        <div id="honest-sign" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] font-bold text-emerald-800">🛡 Маркировка «Честный Знак» (DataMatrix) в комплекте</div>
-        
+
         <!-- БЛОК ОТЗЫВОВ ОПТОВИКОВ -->
         <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3.5 space-y-3">
             <div class="flex items-center justify-between">
@@ -465,9 +498,7 @@
                 </button>
             </div>
             
-            <div id="modal-reviews-list" class="space-y-2.5 max-h-48 overflow-y-auto hide-scrollbar">
-                <!-- Генерируется из JS -->
-            </div>
+            <div id="modal-reviews-list" class="space-y-2.5 max-h-48 overflow-y-auto hide-scrollbar"></div>
         </div>
 
         <div class="card p-3 space-y-2">
@@ -497,6 +528,57 @@
             </div>
         </div>
         <div id="modal-action-slot"></div>
+    </div>
+</div>
+
+<!-- МОДАЛКА РАЗМЕРНОЙ СЕТКИ С ИНТЕРАКТИВНЫМ ВЫБОРОМ -->
+<div id="size-sheet" class="sheet" onclick="if(event.target===this)closeSizeModal()">
+    <div class="sheet-panel p-4 space-y-3" style="height:auto; max-height:88vh;">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+            <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Размерная сетка и ростовка</h3>
+                <p id="size-modal-subtitle" class="text-[10px] text-slate-400 font-bold">Фабричные замеры и выбор размеров</p>
+            </div>
+            <button onclick="closeSizeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button>
+        </div>
+
+        <div class="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800 font-bold">
+            💡 Нажмите на размер или строку в таблице, чтобы отметить нужные размеры:
+        </div>
+
+        <!-- БЫСТРЫЕ ЧИПЫ ВЫБОРА РАЗМЕРОВ -->
+        <div>
+            <div class="text-[11px] font-extrabold text-slate-500 mb-1.5 uppercase">Быстрый выбор размеров:</div>
+            <div id="size-chips-selector" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <!-- ТАБЛИЦА С ИНТЕРАКТИВНЫМ ВЫБОРОМ СТРОК -->
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <table class="w-full text-left text-[11px]">
+                <thead class="bg-slate-100 text-slate-600 font-extrabold text-[10px] uppercase">
+                    <tr>
+                        <th class="p-2.5">Выбор / Размер</th>
+                        <th class="p-2.5">Стелька</th>
+                        <th class="p-2.5 text-center">Пар в коробе</th>
+                        <th class="p-2.5 text-right">Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="size-table-body" class="divide-y divide-slate-100 font-bold text-slate-800">
+                    <!-- Заполняется динамически -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- СТАТУС ВЫБОРА -->
+        <div class="flex items-center justify-between text-[11px] font-extrabold bg-slate-100 p-2.5 rounded-xl">
+            <span>Выбрано: <b id="size-selected-count" class="text-[#E11D2E]">весь короб (8 пар)</b></span>
+            <button type="button" onclick="toggleAllSizes()" class="text-[10px] text-slate-500 underline" id="size-toggle-all-btn">Выбрать все</button>
+        </div>
+
+        <button type="button" onclick="applySizeSelection()" class="w-full h-11 rounded-2xl bg-[#E11D2E] text-white font-extrabold text-xs shadow-md btn-pop">
+            Подтвердить выбор размеров
+        </button>
     </div>
 </div>
 
@@ -543,6 +625,7 @@
     </div>
 </div>
 
+<!-- КОРЗИНА С ДИНАМИЧЕСКИМ ПРОГРЕССОМ МИНИМАЛЬНОГО ЗАКАЗА -->
 <div id="checkout-form" class="sheet">
     <div class="sheet-panel p-4 space-y-3" id="checkout-sheet">
         <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
@@ -555,6 +638,19 @@
         </div>
         <div id="checkout-cart-items" class="space-y-2 max-h-36 overflow-auto"></div>
         <div id="checkout-pairs" class="text-[11px] text-slate-400 font-semibold"></div>
+
+        <!-- ДИНАМИЧЕСКИЙ ПРОГРЕСС МИНИМАЛЬНОГО ЗАКАЗА (BOS-MINI STYLE) -->
+        <div id="min-order-box" class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-2">
+            <div class="flex justify-between items-center text-[11px] font-extrabold">
+                <span id="min-order-title" class="text-slate-700">Минимальный опт: от 10 000 ₽ (или от 1 короба)</span>
+                <span id="min-order-pct" class="text-[#E11D2E]">0%</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div id="min-order-fill" class="h-full bg-[#E11D2E] transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="min-order-hint" class="text-[11px] font-semibold text-slate-500 leading-tight"></p>
+        </div>
+
         <input id="buyer-company" placeholder="ФИО байера или канал *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
         <input id="buyer-contacts" placeholder="Телефон *" class="w-full h-11 rounded-2xl bg-slate-100 px-3 text-sm font-semibold">
 
@@ -625,7 +721,6 @@ const TG_MANAGER = 'https://t.me/Ravshan_rg';
 const PHONE_TEL = 'tel:+79175368940';
 const PHONE_TEXT = '+7 917 536-89-40';
 
-// БАЗОВЫЕ ОТЗЫВЫ ОПТОВИКОВ ДЛЯ ТОВАРОВ
 const INITIAL_REVIEWS = {
     'shoe_sale_demi_autumn': [
         { author: 'Мурад Опт', city: 'Махачкала', boxes: 6, rating: 5, date: 'Вчера', text: 'За 1800₽ короб — подарок. Маломерят на размер, но клиентам сразу сказали, улетели за два дня на рынке.' },
@@ -646,6 +741,7 @@ const FALLBACK_PRODUCTS = [
     { id: 'shoe_new_2026_pumps', cat: 'Женская обувь', title: 'Женские туфли NEW-2026 Тренд №1', badge: 'ХИТ', rating: 5.0, sizes: '36-40 • 8 пар', rostovka: '36(1) • 37(2) • 38(2) • 39(2) • 40(1)', desc: '1300₽ пара. 8 пар в коробе.', price_pair: 1300, box_qty: 8, price_box: 10400, stock_boxes: 12, images: ['https://i.postimg.cc/34TQJjq6/42145.jpg','https://i.postimg.cc/Kk2hv7WW/photo-2026-09-22-22-03-30.jpg','https://i.postimg.cc/XGb67KP2/photo-2026-09-22-22-03-31.jpg'] },
     { id: 'shoe_winter_dino_albat', cat: 'Зимняя обувь', title: 'Зимние ботинки Dino Albat шерсть', badge: 'ЗИМА', rating: 4.9, sizes: '36-41 • 8 пар', rostovka: '36(1) • 37(1) • 38(2) • 39(2) • 40(1) • 41(1)', desc: 'Натуральная шерсть. Каждая пара в коробке.', price_pair: 550, box_qty: 8, price_box: 4400, stock_boxes: 5, images: ['https://i.postimg.cc/1nH2mkw6/6122.jpg','https://i.postimg.cc/tZ5wqKWW/photo-2026-09-22-22-16-17.jpg'] }
 ];
+
 let shoesProducts = [];
 let currentCat = 'all';
 let cart = {};
@@ -661,7 +757,15 @@ const SEASON_OPTS = [['all','Все'],['demi','Демисезон'],['winter','�
 const SIZE_OPTS = [['all','Все'],['w','36–41 (Женские)'],['m','40–45 (Мужские)'],['k','31–36 (Подросток)']];
 const QTY_OPTS = [[0,'Все'],[6,'6 пар'],[8,'8 пар'],[10,'10 пар'],[12,'12 пар']];
 
-// Хранилище отзывов (localStorage)
+const INSOLE_MAP = {
+    '31': '20.0 см', '32': '20.5 см', '33': '21.5 см', '34': '22.0 см', '35': '22.5 см',
+    '36': '23.5 см', '37': '24.0 см', '38': '24.5 см', '39': '25.0 см', '40': '25.5 см',
+    '41': '26.0 см', '42': '26.5 см', '43': '27.5 см', '44': '28.0 см', '45': '28.5 см'
+};
+
+let currentProductSizes = [];
+let selectedSizeSet = new Set();
+
 function getProductReviews(prodId) {
     const saved = localStorage.getItem('rg_reviews_' + prodId);
     if (saved) {
@@ -868,6 +972,7 @@ function startReserveTimer() {
     tick();
     reserveTimerId = setInterval(tick, 1000);
 }
+
 function openVideoReview() {
     document.getElementById('video-sheet').classList.add('open');
     const v = document.getElementById('review-video');
@@ -878,6 +983,120 @@ function closeVideoReview() {
     try { v.pause(); } catch(e) {}
     document.getElementById('video-sheet').classList.remove('open');
 }
+
+// ----------------------------------------------------
+// МОДАЛКА РАЗМЕРНОЙ СЕТКИ С ИНТЕРАКТИВНЫМ ВЫБОРОМ
+// ----------------------------------------------------
+function openSizeModal() {
+    const p = shoesProducts.find(x => x.id === currentModalId);
+    if (!p) return;
+    
+    document.getElementById('size-modal-subtitle').innerText = p.title + ' • Фабричная комплектация';
+    
+    const raw = p.rostovka || p.sizes || '';
+    const parts = [];
+    raw.replace(/(\d{2})\s*(?:\((\d+)\))?/g, function (_, size, qty) {
+        parts.push({ size: size, qty: parseInt(qty || '1', 10) });
+        return '';
+    });
+
+    if (!parts.length) {
+        [36, 37, 38, 39, 40, 41].forEach(s => parts.push({ size: String(s), qty: (s === 38 || s === 39) ? 2 : 1 }));
+    }
+
+    currentProductSizes = parts;
+
+    if (!selectedSizeSet.size) {
+        currentProductSizes.forEach(r => selectedSizeSet.add(r.size));
+    }
+
+    renderSizeModalContent();
+    document.getElementById('size-sheet').classList.add('open');
+}
+
+function renderSizeModalContent() {
+    const chipsBox = document.getElementById('size-chips-selector');
+    chipsBox.innerHTML = currentProductSizes.map(r => {
+        const on = selectedSizeSet.has(r.size);
+        return `<button type="button" onclick="toggleSizeRow('${r.size}')" class="size-chip-select rounded-xl px-3 py-1.5 text-xs font-black border ${on ? 'bg-[#E11D2E] text-white border-[#E11D2E]' : 'bg-white text-slate-700 border-slate-200'}">
+            ${r.size} ${on ? '✓' : ''}
+        </button>`;
+    }).join('');
+
+    const tbody = document.getElementById('size-table-body');
+    let totalPairsSelected = 0;
+
+    tbody.innerHTML = currentProductSizes.map(row => {
+        const insole = INSOLE_MAP[row.size] || '~24.5 см';
+        const on = selectedSizeSet.has(row.size);
+        if (on) totalPairsSelected += row.qty;
+
+        return `
+            <tr class="size-row ${on ? 'selected' : ''}" onclick="toggleSizeRow('${row.size}')">
+                <td class="p-2.5 flex items-center gap-2">
+                    <span class="w-4 h-4 rounded-md border flex items-center justify-center text-[10px] font-black ${on ? 'bg-[#E11D2E] text-white border-[#E11D2E]' : 'border-slate-300 text-transparent'}">✓</span>
+                    <span class="font-extrabold ${on ? 'text-[#E11D2E]' : 'text-slate-900'}">${row.size} RU/EU</span>
+                </td>
+                <td class="p-2.5 text-slate-500 font-semibold">${insole}</td>
+                <td class="p-2.5 text-center font-black ${on ? 'text-[#E11D2E]' : 'text-slate-800'}">${row.qty} шт</td>
+                <td class="p-2.5 text-right font-extrabold ${on ? 'text-emerald-600' : 'text-slate-400'}">${on ? 'Выбран' : '—'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const countEl = document.getElementById('size-selected-count');
+    const toggleBtn = document.getElementById('size-toggle-all-btn');
+
+    if (selectedSizeSet.size === currentProductSizes.length) {
+        countEl.innerText = `весь короб (${totalPairsSelected} пар)`;
+        toggleBtn.innerText = 'Снять все';
+    } else if (selectedSizeSet.size === 0) {
+        countEl.innerText = 'ничего не выбрано';
+        toggleBtn.innerText = 'Выбрать все';
+    } else {
+        countEl.innerText = `${selectedSizeSet.size} разм. (${totalPairsSelected} пар)`;
+        toggleBtn.innerText = 'Выбрать все';
+    }
+}
+
+function toggleSizeRow(size) {
+    if (selectedSizeSet.has(size)) {
+        selectedSizeSet.delete(size);
+    } else {
+        selectedSizeSet.add(size);
+    }
+    renderSizeModalContent();
+}
+
+function toggleAllSizes() {
+    if (selectedSizeSet.size === currentProductSizes.length) {
+        selectedSizeSet.clear();
+    } else {
+        currentProductSizes.forEach(r => selectedSizeSet.add(r.size));
+    }
+    renderSizeModalContent();
+}
+
+function applySizeSelection() {
+    const tag = document.getElementById('modal-size-selected-tag');
+    if (selectedSizeSet.size > 0 && selectedSizeSet.size < currentProductSizes.length) {
+        tag.classList.remove('hidden');
+        tag.innerText = `Размеры: ${Array.from(selectedSizeSet).sort().join(', ')}`;
+    } else if (selectedSizeSet.size === currentProductSizes.length) {
+        tag.classList.remove('hidden');
+        tag.innerText = 'Весь короб (8 пар)';
+    } else {
+        tag.classList.add('hidden');
+    }
+
+    closeSizeModal();
+    showToast(`Выбрано размеров: ${selectedSizeSet.size}`, '📏');
+}
+
+function closeSizeModal() {
+    document.getElementById('size-sheet').classList.remove('open');
+}
+
 function downloadPrice() {
     try {
         if (window.XLSX) {
@@ -983,7 +1202,6 @@ function filteredList() {
     return list;
 }
 
-// РЕНДЕР КАРТОЧЕК С РЕЙТИНГОМ
 function renderProducts() {
     const list = filteredList();
     const box = document.getElementById('products-container');
@@ -1004,7 +1222,6 @@ function renderProducts() {
                 <img src="${p.images[0]}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/eee/999?text=RG'">
                 <span class="absolute top-2 left-2 bg-[#E11D2E] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md">${p.badge}</span>
                 
-                <!-- Бейдж рейтинга и отзывов прямо на фото -->
                 <span class="absolute bottom-2 right-2 bg-white/95 backdrop-blur-sm text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow-sm">
                     <span class="text-amber-500">★</span> ${p.rating || 4.9} (${revCount})
                 </span>
@@ -1096,10 +1313,13 @@ function drawMg() {
         '<circle cx="'+curX.toFixed(1)+'" cy="'+curY.toFixed(1)+'" r="4.5" fill="#e11d2e"></circle>';
 }
 
-// ОТКРЫТИЕ КАРТОЧКИ ТОВАРА С ОТЗЫВАМИ
 function openProductModal(id) {
     const p = shoesProducts.find(x => x.id === id); if (!p) return;
     currentModalId = id;
+    selectedSizeSet.clear();
+    const tag = document.getElementById('modal-size-selected-tag');
+    if (tag) tag.classList.add('hidden');
+
     document.getElementById('modal-badge').innerText = p.badge;
     document.getElementById('modal-main-img').src = p.images[0];
     document.getElementById('modal-title').innerText = p.title;
@@ -1108,7 +1328,14 @@ function openProductModal(id) {
     document.getElementById('modal-rostovka').innerText = formatRostovka(p);
     document.getElementById('modal-margin').innerHTML = 'РРЦ в рознице: ~' + retailPair(p).toLocaleString('ru-RU') + ' ₽/пара<br>Прибыль с короба: +' + boxProfit(p).toLocaleString('ru-RU') + ' ₽';
     
-    // Бейдж рейтинга
+    const matEl = document.getElementById('modal-spec-material');
+    if (matEl) {
+        const season = detectSeason(p);
+        if (season === 'winter') matEl.innerText = 'Натуральная шерсть Dino Albat / плотный мех';
+        else if (season === 'summer') matEl.innerText = 'Дышащая сетка / облегчённые материалы';
+        else matEl.innerText = 'Премиальная фабричная экокожа / демисезон';
+    }
+
     const revs = getProductReviews(id);
     document.getElementById('modal-rating-badge').innerHTML = `
         <div class="flex items-center gap-1 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg text-xs font-extrabold text-amber-800">
@@ -1137,7 +1364,6 @@ function openProductModal(id) {
     document.getElementById('product-modal').classList.add('open');
 }
 
-// РЕНДЕР СПИСКА ОТЗЫВОВ В МОДАЛКЕ
 function renderModalReviews(prodId) {
     const list = getProductReviews(prodId);
     document.getElementById('reviews-count-badge').innerText = list.length;
@@ -1166,7 +1392,6 @@ function renderModalReviews(prodId) {
     `).join('');
 }
 
-// ДОБАВЛЕНИЕ СВОЕГО ОТЗЫВА
 let reviewStars = 5;
 function openAddReviewModal() {
     document.getElementById('add-review-sheet').classList.add('open');
@@ -1200,10 +1425,9 @@ function submitReview() {
 
     saveProductReviews(currentModalId, currentList);
     renderModalReviews(currentModalId);
-    renderProducts(); // обновить счетчик на карточке
+    renderProducts();
     closeAddReviewModal();
     
-    // Очистить поля
     document.getElementById('rev-name').value = '';
     document.getElementById('rev-city').value = '';
     document.getElementById('rev-text').value = '';
@@ -1236,14 +1460,47 @@ function updateModalCalculations(product, boxes) {
     renderVolumeBar(product, boxes);
     document.getElementById('modal-action-slot').innerHTML = `<button onclick="commitModalCart('${product.id}', ${boxes}, this)" class="w-full h-12 rounded-2xl bg-[#E11D2E] text-white font-extrabold btn-pop">ДОБАВИТЬ ${boxes} КОР. • ${total.toLocaleString('ru-RU')} ₽</button>`;
 }
-function commitModalCart(id, boxes, el) { updateCartBoxes(id, boxes, el); closeProductModal(); showToast('Добавлено ' + boxes + ' кор.', '✅'); }
-function updateCartBoxes(id, newBoxes, el) {
-    const p = shoesProducts.find(x => x.id === id); if (!p) return;
-    if (newBoxes <= 0) delete cart[id];
-    else cart[id] = { qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), price_box: boxUnitPrice(p, newBoxes), title: p.title };
-    if (el && newBoxes > 0) flyToCart(el);
-    renderProducts(); updateCartUI();
+
+// ----------------------------------------------------
+// ФИКСАЦИЯ РАЗМЕРОВ В КОРЗИНУ
+// ----------------------------------------------------
+function commitModalCart(id, boxes, el) { 
+    const p = shoesProducts.find(x => x.id === id);
+    let chosenSizes = 'Полная ростовка (8 пар)';
+    
+    if (selectedSizeSet.size > 0 && currentProductSizes.length > 0) {
+        if (selectedSizeSet.size === currentProductSizes.length) {
+            chosenSizes = 'Весь короб (' + (p ? p.box_qty : 8) + ' пар)';
+        } else {
+            chosenSizes = Array.from(selectedSizeSet).sort((a,b)=>Number(a)-Number(b)).join(', ');
+        }
+    } else if (p && p.rostovka) {
+        chosenSizes = p.rostovka;
+    }
+
+    updateCartBoxes(id, boxes, el, chosenSizes); 
+    closeProductModal(); 
+    showToast('Добавлено ' + boxes + ' кор. [' + chosenSizes + ']', '✅'); 
 }
+
+function updateCartBoxes(id, newBoxes, el, customSizes) {
+    const p = shoesProducts.find(x => x.id === id); if (!p) return;
+    if (newBoxes <= 0) {
+        delete cart[id];
+    } else {
+        const prevSizes = cart[id] ? cart[id].sizes : null;
+        cart[id] = { 
+            qty_boxes: Math.min(newBoxes, Math.max(p.stock_boxes, 1)), 
+            price_box: boxUnitPrice(p, newBoxes), 
+            title: p.title,
+            sizes: customSizes || prevSizes || (p.rostovka || 'Полная ростовка')
+        };
+    }
+    if (el && newBoxes > 0) flyToCart(el);
+    renderProducts(); 
+    updateCartUI();
+}
+
 function updateCartUI() {
     let boxes = 0;
     Object.values(cart).forEach(i => boxes += i.qty_boxes);
@@ -1268,25 +1525,62 @@ function currentTk() {
     if (shipMode === 'pickup') return 'Самовывоз Линия 2-3-01';
     return 'Рейсовый автобус (Садовод / ТЯК Люблино)';
 }
+
+const MIN_ORDER_THRESHOLD = 10000;
+
 function showCheckout() {
     if (!Object.keys(cart).length) { showToast('Корзина пустая', '⚠️'); return; }
     let sum = 0;
+    let boxes = 0;
     const box = document.getElementById('checkout-cart-items');
     box.innerHTML = '';
+    
     Object.values(cart).forEach(item => {
-        const sub = item.qty_boxes * item.price_box; sum += sub;
-        box.innerHTML += `<div class="flex justify-between gap-2 bg-slate-50 rounded-xl p-2.5 text-[12px]"><div><b>${item.title}</b><div class="text-slate-400">${item.qty_boxes} кор.</div></div><b>${sub.toLocaleString('ru-RU')} ₽</b></div>`;
+        const sub = item.qty_boxes * item.price_box; 
+        sum += sub;
+        boxes += item.qty_boxes;
+        box.innerHTML += `
+            <div class="flex justify-between items-center gap-2 bg-slate-50 rounded-xl p-2.5 text-[12px]">
+                <div class="min-w-0">
+                    <b class="truncate block">${item.title}</b>
+                    <div class="text-[10px] text-slate-500 font-bold">
+                        ${item.qty_boxes} кор. • Размеры: <span class="text-[#E11D2E]">${item.sizes}</span>
+                    </div>
+                </div>
+                <b class="shrink-0 text-slate-900">${sub.toLocaleString('ru-RU')} ₽</b>
+            </div>`;
     });
+    
     document.getElementById('checkout-total').innerText = sum.toLocaleString('ru-RU') + ' ₽';
-    let boxes = 0;
-    Object.values(cart).forEach(it => boxes += it.qty_boxes);
     const pairsEl = document.getElementById('checkout-pairs');
     if (pairsEl) pairsEl.innerText = boxes + ' кор. • ' + (boxes * 8) + ' пар в партии';
+
+    const fillEl = document.getElementById('min-order-fill');
+    const pctEl = document.getElementById('min-order-pct');
+    const hintEl = document.getElementById('min-order-hint');
+    const titleEl = document.getElementById('min-order-title');
+
+    const pct = Math.min(100, Math.round((sum / MIN_ORDER_THRESHOLD) * 100));
+    fillEl.style.width = pct + '%';
+    pctEl.innerText = pct + '%';
+
+    if (sum >= MIN_ORDER_THRESHOLD) {
+        fillEl.className = 'h-full bg-emerald-500 transition-all duration-300';
+        pctEl.className = 'text-emerald-600 font-black';
+        titleEl.innerText = '✅ Минимальный заказ от 10 000 ₽ выполнен!';
+        hintEl.innerHTML = '<span class="text-emerald-700 font-bold">Оптовая отгрузка подтверждена. Все скидки активны.</span>';
+    } else {
+        const remaining = MIN_ORDER_THRESHOLD - sum;
+        fillEl.className = 'h-full bg-[#E11D2E] transition-all duration-300';
+        pctEl.className = 'text-[#E11D2E] font-black';
+        titleEl.innerText = 'Минимальный опт: от 10 000 ₽ (или от 1 короба)';
+        hintEl.innerHTML = `Заказ на ${sum.toLocaleString('ru-RU')} ₽. Добавьте товара ещё на <b class="text-[#E11D2E] font-extrabold text-[12px]">${remaining.toLocaleString('ru-RU')} ₽</b> или оформите пробную партию от 1 короба.`;
+    }
+
     document.getElementById('checkout-form').classList.add('open');
 }
 
 const WB_FEE = 0.30;
-
 let modalMgTab = 'wb';
 function toggleModalMargin() {
     const box = document.getElementById('modal-mg-box');
@@ -1365,6 +1659,10 @@ function closeSheets() {
     document.getElementById('search-sheet').classList.remove('open');
     document.getElementById('params-sheet').classList.remove('open');
 }
+
+// ----------------------------------------------------
+// ОТПРАВКА ЗАКАЗА С УЧЁТОМ ВЫБРАННЫХ РАЗМЕРОВ
+// ----------------------------------------------------
 function sendOrderToBot() {
     const name = document.getElementById('buyer-company').value.trim();
     const contacts = document.getElementById('buyer-contacts').value.trim();
@@ -1396,18 +1694,33 @@ function sendOrderToBot() {
         showToast('Укажите город назначения', '⚠️');
         return;
     }
-    const cartItems = []; let totalSum = 0;
+
+    const cartItems = []; 
+    let totalSum = 0;
     Object.entries(cart).forEach(([id, item]) => {
-        cartItems.push({ id, title: item.title, qty: item.qty_boxes, price: item.price_box, total: item.qty_boxes * item.price_box });
+        cartItems.push({ 
+            id, 
+            title: item.title, 
+            sizes: item.sizes, 
+            qty: item.qty_boxes, 
+            price: item.price_box, 
+            total: item.qty_boxes * item.price_box 
+        });
         totalSum += item.qty_boxes * item.price_box;
     });
+
     const payload = {
         type: 'order',
         company: name + ' (ТК: ' + tk + (busNote ? '; ' + busNote : '') + ')',
         city, contacts, tk, bus: busNote, pay_method: 'sbp', buyer_inn: 'Не указан',
         cart: cartItems, total_sum: totalSum
     };
-    const plain = ['RG_ORDER','PAY:sbp','SUM:' + totalSum,'COMPANY:' + payload.company,'CITY:' + city,'CONTACTS:' + contacts,'SHIP:' + tk].concat(busNote ? ['BUS:' + busNote] : []).concat(cartItems.map(it => 'ITEM:' + it.title + '|' + it.qty + '|' + it.total)).join('\n');
+
+    const plain = ['RG_ORDER','PAY:sbp','SUM:' + totalSum,'COMPANY:' + payload.company,'CITY:' + city,'CONTACTS:' + contacts,'SHIP:' + tk]
+        .concat(busNote ? ['BUS:' + busNote] : [])
+        .concat(cartItems.map(it => 'ITEM:' + it.title + ' [Размеры: ' + it.sizes + ']|' + it.qty + '|' + it.total))
+        .join('\n');
+
     window.__lastPlainOrder = plain;
     document.getElementById('order-fallback-text').value = plain;
     try {
@@ -1429,6 +1742,7 @@ function openLightbox() {
     document.getElementById('lightbox-modal').classList.remove('opacity-0','pointer-events-none');
 }
 function closeLightbox() { document.getElementById('lightbox-modal').classList.add('opacity-0','pointer-events-none'); }
+
 const TICKS = [
     'Казань забрала 12 коробов Dino Albat',
     'Новосибирск — 8 коробов туфли NEW-2026',
